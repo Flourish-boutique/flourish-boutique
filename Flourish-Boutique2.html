@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flourish Boutique</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFF8F0; /* Very light orange background */
+            color: #333333; /* Dark gray text */
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 80px; /* Space for the fixed header height */
+            transition: padding-top 0.3s ease; /* Smooth transition for padding if header height changes */
+        }
+        main {
+            flex-grow: 1;
+        }
+        .header-theme {
+            background-color: #FF7F50; /* Coral */
+            color: white;
+            border-bottom: 1px solid #E0E0E0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed; /* Make the header fixed */
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100; /* Ensure it stays on top */
+            transition: transform 0.3s ease-out; /* Smooth slide transition */
+            transform: translateY(0); /* Default visible state */
+            height: 80px; /* Explicit height for the header */
+            display: flex; /* Use flexbox for internal alignment */
+            align-items: center; /* Vertically center content */
+        }
+        .header-hidden {
+            transform: translateY(-100%); /* Slide up to hide */
+        }
+        .btn-primary {
+            background-color: #FF8C00; /* DarkOrange */
+            color: white;
+            padding: 0.85rem 2rem;
+            border-radius: 0.75rem; /* More rounded */
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+        .btn-primary:hover {
+            background-color: #FF6347; /* Tomato */
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+        }
+        .btn-secondary {
+            background-color: #FFA07A; /* LightSalmon - a lighter orange accent */
+            color: #333333;
+            padding: 0.85rem 2rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        .btn-secondary:hover {
+            background-color: #FF8C69; /* Darker LightSalmon */
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+        }
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+        .content-card, .modal-content-base {
+            background-color: white;
+            border-radius: 1.25rem; /* Even more rounded for a soft feel */
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* Soft, diffused shadow */
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            border: 1px solid #F0F0F0; /* Very light border */
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Slightly lighter overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content-base {
+            padding: 3rem;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(30px);
+            opacity: 0;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+        .modal-overlay.show .modal-content-base {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .close-button {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            font-size: 2.25rem;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.2s ease;
+        }
+        .close-button:hover {
+            color: #333;
+        }
+        .thank-you-message {
+            color: #22c55e; /* Green */
+            font-weight: 700;
+            margin-top: 2rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.6s ease-in-out;
+            font-size: 2rem;
+        }
+        .thank-you-message.show {
+            opacity: 1;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F5F5;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FF8C00; /* DarkOrange scrollbar */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF6347;
+        }
+
+        /* Product card fade-in animation */
+        .product-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInSlideUp 0.5s ease-out forwards;
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 1.5rem;
+            border: 1px solid #F3F4F6;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+        @keyframes fadeInSlideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Input field styling */
+        input[type="text"], input[type="tel"], input[type="email"], input[type="number"], input[type="password"], textarea, select {
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            padding: 0.85rem 1.25rem;
+            font-size: 1rem;
+            color: #333;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        input[type="text"]:focus, input[type="tel"]:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #FF8C00; /* DarkOrange focus */
+            box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.2); /* Orange glow */
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #FF8C00; /* Orange spinner */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hamburger Menu Styles */
+        .hamburger-menu {
+            position: fixed;
+            top: 0;
+            left: -280px; /* Hidden by default */
+            width: 250px;
+            height: 100%;
+            background-color: #333; /* Dark background for menu */
+            color: white;
+            padding: 2rem 1rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            transition: left 0.3s ease-out;
+            z-index: 999; /* Below modals, above main content */
+            display: flex;
+            flex-direction: column;
+        }
+        .hamburger-menu.open {
+            left: 0;
+        }
+        .hamburger-menu ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 2rem;
+        }
+        .hamburger-menu ul li {
+            margin-bottom: 1rem;
+        }
+        .hamburger-menu ul li a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: white;
+            font-size: 1.125rem;
+            font-weight: 500;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease;
+        }
+        .hamburger-menu ul li a:hover {
+            background-color: #555;
+        }
+        .hamburger-icon {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 25px;
+            background: transparent;
+            border: none;
+            padding: 0;
+            z-index: 101; /* Above header content, but header is fixed */
+            position: absolute; /* Position relative to header */
+            left: 1.5rem; /* Adjust as needed */
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .hamburger-icon span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: white;
+            border-radius: 2px;
+            transition: all 0.3s ease-in-out;
+        }
+        .hamburger-icon.open span:nth-child(1) {
+            transform: translateY(11px) rotate(45deg);
+        }
+        .hamburger-icon.open span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger-icon.open span:nth-child(3) {
+            transform: translateY(-11px) rotate(-45deg);
+        }
+        .menu-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="scroll-smooth">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase variables
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let isAdmin = false; // Flag to determine if the current user is an admin
+        let isAuthReady = false; // Flag to indicate if auth is ready
+        let allProducts = []; // Store all products for filtering
+        let allCategories = []; // Store all categories
+
+        // Admin credentials (for demonstration purposes)
+        const ADMIN_EMAIL = 'admin@flourishboutique.com';
+        const ADMIN_PASSWORD_FIREBASE = 'admin123'; // This should be securely managed in a real app
+
+        // Current page state for SPA feel
+        let currentPage = 'shop'; // 'shop', 'admin', 'edit'
+        let activeCategoryFilter = 'All Products'; // Default filter
+
+        // Initialize Firebase when the window loads
+        window.onload = async function() {
+            try {
+                // Mandatory global variables for Canvas environment
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+                if (Object.keys(firebaseConfig).length === 0) {
+                    console.error("Firebase config is empty. Please ensure __firebase_config is provided.");
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Authenticate user
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAdmin = (user.email === ADMIN_EMAIL); // Simple admin check for demo
+                        console.log("Authenticated user ID:", userId, "Is Admin:", isAdmin);
+                        document.getElementById('admin-logout-btn-container').classList.toggle('hidden', !isAdmin);
+                    } else {
+                        // Sign in anonymously if no user is found or initial token is not provided
+                        try {
+                            // Mandatory global variable for Canvas environment
+                            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in with custom token. User ID:", userId);
+                            } else {
+                                await signInAnonymously(auth);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in anonymously. User ID:", userId);
+                            }
+                        } catch (error) {
+                            console.error("Error during anonymous sign-in or custom token sign-in:", error);
+                            userId = crypto.randomUUID(); // Fallback to a random ID if auth fails
+                            console.log("Using random user ID as fallback:", userId);
+                        }
+                        isAdmin = false;
+                        document.getElementById('admin-logout-btn-container').classList.add('hidden');
+                    }
+                    isAuthReady = true; // Set auth ready flag
+                    initializeFirestoreListeners(); // Start listening to Firestore data
+                    renderPage(currentPage); // Render initial page after auth is ready
+                });
+
+            } catch (error) {
+                console.error("Failed to initialize Firebase:", error);
+                showModal('messageModal', 'Failed to initialize the application. Please try again later.', 'text-red-600');
+            }
+        };
+
+        // --- Dynamic Header Scroll Logic ---
+        let lastScrollY = 0;
+        const header = document.querySelector('.header-theme');
+        const headerHeight = 80; // Fixed height of the header
+        const scrollHideThreshold = 100; // Scroll 100px down before hiding
+
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+
+            // Only apply dynamic hide/show if on the 'shop' page
+            if (currentPage === 'shop') {
+                if (currentScrollY > lastScrollY && currentScrollY > scrollHideThreshold) {
+                    // Scrolling Down and past the threshold
+                    header.classList.add('header-hidden');
+                } else if (currentScrollY < lastScrollY || currentScrollY <= 0) {
+                    // Scrolling Up or at the very top of the page
+                    header.classList.remove('header-hidden');
+                }
+            } else {
+                // Always show header in admin/edit mode
+                header.classList.remove('header-hidden');
+            }
+
+            lastScrollY = currentScrollY;
+        });
+
+
+        // Function to initialize Firestore listeners after auth is ready
+        function initializeFirestoreListeners() {
+            if (!isAuthReady || !db) {
+                console.warn("Firestore not ready or DB not initialized. Skipping listener setup.");
+                return;
+            }
+
+            // Listen for real-time updates to products
+            const productsCollectionRef = collection(db, `artifacts/${__app_id}/public/data/products`);
+            onSnapshot(productsCollectionRef, (snapshot) => {
+                allProducts = []; // Clear previous products
+                snapshot.forEach(doc => {
+                    allProducts.push({ id: doc.id, ...doc.data() });
+                });
+                filterProducts(); // Display all products initially, or apply current filter
+                displayEditableProducts(allProducts);
+            }, (error) => {
+                console.error("Error fetching products:", error);
+                showModal('messageModal', 'Error loading products. Please refresh the page.', 'text-red-600');
+            });
+
+            // Listen for real-time updates to orders (for admin panel)
+            const ordersCollectionRef = collection(db, `artifacts/${__app_id}/public/data/orders`);
+            onSnapshot(ordersCollectionRef, (snapshot) => {
+                const orders = [];
+                snapshot.forEach(doc => {
+                    orders.push({ id: doc.id, ...doc.data() });
+                });
+                displayOrders(orders);
+                updateAdminDashboardStats(allProducts.length, orders.length);
+            }, (error) => {
+                console.error("Error fetching orders:", error);
+                showModal('messageModal', 'Error loading orders for admin. Please refresh.', 'text-red-600');
+            });
+
+            // Listen for real-time updates to categories
+            const categoriesCollectionRef = collection(db, `artifacts/${__app_id}/public/data/categories`);
+            onSnapshot(categoriesCollectionRef, (snapshot) => {
+                allCategories = [];
+                snapshot.forEach(doc => {
+                    allCategories.push({ id: doc.id, ...doc.data() });
+                });
+                renderCategoryMenu(); // Update hamburger menu
+                displayCategoriesForManagement(); // Update admin category list
+                populateCategoryDropdowns(); // Update product forms
+            }, (error) => {
+                console.error("Error fetching categories:", error);
+                showModal('messageModal', 'Error loading categories. Please refresh the page.', 'text-red-600');
+            });
+        }
+
+        // --- SPA Routing Logic ---
+        window.renderPage = function(pageName) {
+            currentPage = pageName;
+            document.getElementById('hero-section').classList.add('hidden');
+            document.getElementById('products-section').classList.add('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('edit-mode-panel').classList.add('hidden');
+
+            // Ensure header is visible when changing pages, especially to admin/edit
+            header.classList.remove('header-hidden');
+
+            // Hide/show hamburger and shop now button based on page
+            document.getElementById('hamburger-icon').classList.toggle('hidden', pageName !== 'shop');
+            document.getElementById('shop-now-btn').classList.toggle('hidden', pageName !== 'shop');
+
+
+            if (pageName === 'shop') {
+                document.getElementById('hero-section').classList.remove('hidden');
+                document.getElementById('products-section').classList.remove('hidden');
+                document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
+            } else if (pageName === 'admin') {
+                document.getElementById('admin-panel').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (pageName === 'edit') {
+                document.getElementById('edit-mode-panel').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            hideHamburgerMenu(); // Close menu on page change
+        };
+
+        // --- Product Display and Filtering ---
+        window.filterProducts = function(category = activeCategoryFilter) {
+            activeCategoryFilter = category; // Set the active filter
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+            let filtered = allProducts;
+
+            // Apply category filter first
+            if (activeCategoryFilter !== 'All Products') {
+                filtered = filtered.filter(product => product.category === activeCategoryFilter);
+            }
+
+            // Then apply search term filter
+            if (searchTerm) {
+                filtered = filtered.filter(product =>
+                    product.name.toLowerCase().includes(searchTerm) ||
+                    product.description.toLowerCase().includes(searchTerm)
+                );
+            }
+            displayProducts(filtered);
+        };
+
+        function displayProducts(products) {
+            const productsGrid = document.getElementById('products-grid');
+            if (!productsGrid) return;
+            productsGrid.innerHTML = ''; // Clear existing products
+
+            if (products.length === 0) {
+                productsGrid.innerHTML = '<p class="text-center text-gray-600 col-span-full text-xl mt-8">No products found matching your criteria.</p>';
+                return;
+            }
+
+            products.forEach((product, index) => {
+                const productCard = `
+                    <div class="product-card flex flex-col" style="animation-delay: ${index * 0.05}s;" onclick="showProductDetail('${product.id}')">
+                        <img src="${product.imageUrl || 'https://placehold.co/250x180/FF8C00/FFFFFF?text=Product'}" alt="${product.name}" class="w-full h-40 object-cover rounded-md mb-3 border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-2 flex-grow overflow-hidden text-ellipsis whitespace-nowrap">${product.description}</p>
+                        <p class="text-xl font-bold text-orange-700 mb-0">Rs ${parseFloat(product.price).toFixed(2)}</p>
+                        <p class="text-xs text-gray-500 mt-1">Category: ${product.category || 'Uncategorized'}</p>
+                    </div>
+                `;
+                productsGrid.innerHTML += productCard;
+            });
+        }
+
+        async function showProductDetail(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) {
+                showModal('messageModal', 'Product not found.', 'text-red-600');
+                return;
+            }
+
+            document.getElementById('detail-product-id').value = product.id;
+            document.getElementById('detail-product-name').textContent = product.name;
+            document.getElementById('detail-product-price').textContent = `Rs ${parseFloat(product.price).toFixed(2)}`;
+            document.getElementById('detail-product-description').textContent = product.description;
+            document.getElementById('detail-product-image').src = product.imageUrl || 'https://placehold.co/400x300/FF8C00/FFFFFF?text=Product';
+            document.getElementById('detail-product-category').textContent = product.category || 'Uncategorized';
+
+            showModal('productDetailModal');
+        }
+
+        async function addProduct(product) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Adding product...', 'text-blue-600');
+                const productsCollectionRef = collection(db, `artifacts/${__app_id}/public/data/products`);
+                await addDoc(productsCollectionRef, product);
+                console.log("Product added successfully!");
+                document.getElementById('add-product-form').reset(); // Clear form
+                document.getElementById('add-product-preview').src = 'https://placehold.co/250x180/FF8C00/FFFFFF?text=Upload+Image'; // Reset image preview
+                showModal('messageModal', 'Product added successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error adding product: ", e);
+                showModal('messageModal', 'Error adding product. Please try again.', 'text-red-600');
+            }
+        }
+
+        async function updateProduct(productId, updates) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Saving changes...', 'text-blue-600');
+                const productDocRef = doc(db, `artifacts/${__app_id}/public/data/products`, productId);
+                await updateDoc(productDocRef, updates);
+                console.log("Product updated successfully!");
+                showModal('messageModal', 'Product updated successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error updating product: ", e);
+                showModal('messageModal', 'Error updating product. Please try again.', 'text-red-600');
+            }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+                return; // User cancelled the deletion
+            }
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Deleting product...', 'text-blue-600');
+                const productDocRef = doc(db, `artifacts/${__app_id}/public/data/products`, productId);
+                await deleteDoc(productDocRef);
+                console.log("Product deleted successfully!");
+                showModal('messageModal', 'Product deleted successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error deleting product: ", e);
+                showModal('messageModal', 'Error deleting product. Please try again.', 'text-red-600');
+            }
+        }
+
+        // --- Order Management Functions ---
+        async function submitOrder(orderData) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Submitting your order...', 'text-blue-600');
+                const ordersCollectionRef = collection(db, `artifacts/${__app_id}/public/data/orders`);
+                await addDoc(ordersCollectionRef, { ...orderData, orderDate: new Date().toISOString() });
+                console.log("Order submitted successfully!");
+                document.getElementById('order-form').reset(); // Clear form
+                document.getElementById('payment-details').innerHTML = ''; // Clear payment details
+                document.getElementById('cash-in-hand-address').classList.add('hidden'); // Hide address field
+                hideModal('orderModal');
+                showThankYouMessage();
+            } catch (e) {
+                console.error("Error submitting order: ", e);
+                showModal('messageModal', 'Error submitting order. Please try again.', 'text-red-600');
+            }
+        }
+
+        function displayOrders(orders) {
+            const ordersList = document.getElementById('admin-orders-list');
+            if (!ordersList) return;
+            ordersList.innerHTML = ''; // Clear existing orders
+
+            if (orders.length === 0) {
+                ordersList.innerHTML = '<p class="text-center text-gray-600 text-xl mt-8">No customer orders yet.</p>';
+                return;
+            }
+
+            // Sort orders by date, newest first
+            orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
+            orders.forEach(order => {
+                const orderItem = `
+                    <div class="bg-white p-5 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-200">
+                        <div class="flex-grow">
+                            <p class="font-bold text-lg text-gray-800 mb-1">${order.fullName}</p>
+                            <p class="text-gray-700 text-sm">Contact: <span class="font-medium">${order.contactNumber}</span></p>
+                            <p class="text-gray-700 text-sm">Email: <span class="font-medium">${order.emailAddress || 'N/A'}</span></p>
+                            <p class="text-gray-700 mt-2">Product: <span class="font-semibold">${order.productName}</span> (Rs ${order.productPrice})</p>
+                            <p class="text-gray-700 text-sm">Payment Method: <span class="font-medium">${order.paymentMethod === 'juice' ? 'Juice by MCB' : 'Cash in Hand'}</span></p>
+                            ${order.deliveryAddress && order.deliveryAddress !== 'N/A' ? `<p class="text-gray-700 text-sm">Delivery Address: <span class="font-medium">${order.deliveryAddress}</span></p>` : ''}
+                            <p class="text-xs text-gray-500 mt-2">Order ID: <span class="font-mono">${order.id}</span></p>
+                            <p class="text-xs text-gray-500">Ordered On: ${new Date(order.orderDate).toLocaleString()}</p>
+                        </div>
+                        <button class="btn-primary bg-red-600 hover:bg-red-700 mt-6 md:mt-0 md:ml-6 text-sm" onclick="deleteOrder('${order.id}')">Delete Order</button>
+                    </div>
+                `;
+                ordersList.innerHTML += orderItem;
+            });
+        }
+
+        async function deleteOrder(orderId) {
+            if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+                return; // User cancelled the deletion
+            }
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Deleting order...', 'text-blue-600');
+                const orderDocRef = doc(db, `artifacts/${__app_id}/public/data/orders`, orderId);
+                await deleteDoc(orderDocRef);
+                console.log("Order deleted successfully!");
+                showModal('messageModal', 'Order deleted successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error deleting order: ", e);
+                showModal('messageModal', 'Error deleting order. Please try again.', 'text-red-600');
+            }
+        }
+
+        function updateAdminDashboardStats(productCount, orderCount) {
+            const productCountElem = document.getElementById('admin-product-count');
+            const orderCountElem = document.getElementById('admin-order-count');
+            if (productCountElem) productCountElem.textContent = productCount;
+            if (orderCountElem) orderCountElem.textContent = orderCount;
+        }
+
+        // --- Admin Edit Mode Product Display ---
+        function displayEditableProducts(products) {
+            const editableProductsGrid = document.getElementById('editable-products-grid');
+            if (!editableProductsGrid) return;
+            editableProductsGrid.innerHTML = ''; // Clear existing products
+
+            if (products.length === 0) {
+                editableProductsGrid.innerHTML = '<p class="text-center text-gray-600 col-span-full text-xl mt-8">No products to edit. Add new ones!</p>';
+                return;
+            }
+
+            products.forEach(product => {
+                const editableProductCard = `
+                    <div class="product-card flex flex-col p-4">
+                        <!-- Image Upload/Preview - Note: This is client-side preview only. Actual file storage would require a backend. -->
+                        <label for="edit-image-${product.id}" class="cursor-pointer mb-3 flex justify-center items-center h-40 w-full border border-dashed border-gray-300 rounded-md overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                            <img id="edit-preview-${product.id}" src="${product.imageUrl || 'https://placehold.co/250x180/FF8C00/FFFFFF?text=Upload+Image'}" alt="Product Image" class="w-full h-full object-cover">
+                            <input type="file" id="edit-image-${product.id}" class="hidden" accept="image/*" onchange="previewEditImage(event, '${product.id}')">
+                        </label>
+                        <label for="edit-name-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Product Name:</label>
+                        <input type="text" id="edit-name-${product.id}" value="${product.name}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500">
+
+                        <label for="edit-description-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Description:</label>
+                        <textarea id="edit-description-${product.id}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 h-24 resize-y focus:outline-none focus:ring-2 focus:ring-orange-500">${product.description}</textarea>
+
+                        <label for="edit-price-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Price (Rs):</label>
+                        <input type="number" id="edit-price-${product.id}" value="${parseFloat(product.price).toFixed(2)}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-orange-500" step="0.01">
+
+                        <label for="edit-category-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Category:</label>
+                        <select id="edit-category-${product.id}" class="w-full p-2 border border-gray-300 rounded-sm mb-4 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                            <!-- Categories will be populated here by JavaScript -->
+                        </select>
+
+                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                            <button class="btn-primary flex-1 text-sm" onclick="saveEditedProduct('${product.id}')">Save Changes</button>
+                            <button class="btn-primary bg-red-600 hover:bg-red-700 flex-1 text-sm" onclick="deleteProduct('${product.id}')">Remove Product</button>
+                        </div>
+                    </div>
+                `;
+                editableProductsGrid.innerHTML += editableProductCard;
+                // Set the product's category after the card is added to DOM
+                document.getElementById(`edit-category-${product.id}`).value = product.category || '';
+            });
+            populateCategoryDropdowns(); // Ensure dropdowns are populated after product cards are rendered
+        }
+
+        // Function to save edited product
+        window.saveEditedProduct = async function(productId) {
+            const nameInput = document.getElementById(`edit-name-${productId}`);
+            const descriptionInput = document.getElementById(`edit-description-${productId}`);
+            const priceInput = document.getElementById(`edit-price-${productId}`);
+            const imageUrlInput = document.getElementById(`edit-preview-${productId}`);
+            const categorySelect = document.getElementById(`edit-category-${productId}`);
+
+            const name = nameInput.value.trim();
+            const description = descriptionInput.value.trim();
+            const price = parseFloat(priceInput.value);
+            const imageUrl = imageUrlInput.src;
+            const category = categorySelect.value;
+
+            if (!name || !description || isNaN(price) || price <= 0 || !category) {
+                showModal('messageModal', 'Please fill all product fields correctly (Name, Description, Price, Category).', 'text-red-600');
+                return;
+            }
+
+            await updateProduct(productId, { name, description, price, imageUrl, category });
+        };
+
+        // Function to preview image in edit mode
+        window.previewEditImage = function(event, productId) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                const output = document.getElementById(`edit-preview-${productId}`);
+                output.src = reader.result;
+            };
+            if (event.target.files[0]) {
+                reader.readAsDataURL(event.target.files[0]);
+            }
+        };
+
+        // Function to preview image for new product
+        window.previewNewProductImage = function(event) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                const output = document.getElementById('add-product-preview');
+                output.src = reader.result;
+            };
+            if (event.target.files[0]) {
+                reader.readAsDataURL(event.target.files[0]);
+            }
+        };
+
+        // Make functions globally accessible for HTML onclick
+        window.showOrderFormFromDetail = function() {
+            const productId = document.getElementById('detail-product-id').value;
+            const productName = document.getElementById('detail-product-name').textContent;
+            const productPrice = document.getElementById('detail-product-price').textContent.replace('Rs ', ''); // Remove 'Rs ' prefix
+
+            document.getElementById('order-product-id').value = productId;
+            document.getElementById('order-product-name').value = productName;
+            document.getElementById('order-product-price').value = productPrice;
+
+            hideModal('productDetailModal'); // Hide product detail modal first
+            showModal('orderModal');
+        };
+
+
+        window.hideModal = function(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            // Allow time for transition before hiding completely
+            setTimeout(() => {
+                document.getElementById(modalId).classList.add('hidden');
+            }, 300);
+        };
+
+        window.showModal = function(modalId, message = '', messageClass = '') {
+            const modal = document.getElementById(modalId);
+            const messageElement = modal.querySelector('#modal-message');
+            if (messageElement) {
+                messageElement.textContent = message;
+                messageElement.className = `text-center ${messageClass} text-xl font-semibold mb-4`;
+            }
+            modal.classList.remove('hidden');
+            // Allow time for display before showing with transition
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        };
+
+        window.handlePaymentMethodChange = function() {
+            const paymentMethod = document.getElementById('payment-method').value;
+            const paymentDetailsDiv = document.getElementById('payment-details');
+            const cashInHandAddressDiv = document.getElementById('cash-in-hand-address');
+
+            paymentDetailsDiv.innerHTML = '';
+            cashInHandAddressDiv.classList.add('hidden');
+
+            if (paymentMethod === 'juice') {
+                paymentDetailsDiv.innerHTML = '<p class="text-gray-700 mt-2 text-base">Please transfer the money to <strong class="font-semibold">58317021</strong> via Juice by MCB.</p>';
+            } else if (paymentMethod === 'cash') {
+                cashInHandAddressDiv.classList.remove('hidden');
+                paymentDetailsDiv.innerHTML = '<p class="text-gray-700 mt-2 text-base">Please pay delivery fees in advance to <strong class="font-semibold">58317021</strong> via Juice by MCB. Proper amount must be prepared when meeting.</p>';
+            }
+        };
+
+        window.processOrder = async function() {
+            const fullNameInput = document.getElementById('full-name');
+            const contactNumberInput = document.getElementById('contact-number');
+            const emailAddressInput = document.getElementById('email-address');
+            const paymentMethodInput = document.getElementById('payment-method');
+            const deliveryAddressInput = document.getElementById('delivery-address');
+
+            const productId = document.getElementById('order-product-id').value;
+            const productName = document.getElementById('order-product-name').value;
+            const productPrice = document.getElementById('order-product-price').value;
+
+            const fullName = fullNameInput.value.trim();
+            const contactNumber = contactNumberInput.value.trim();
+            const emailAddress = emailAddressInput.value.trim();
+            const paymentMethod = paymentMethodInput.value;
+            const deliveryAddress = deliveryAddressInput.value.trim();
+
+            // Basic validation
+            if (!fullName || !contactNumber || !paymentMethod) {
+                showModal('messageModal', 'Please fill in all required fields: Full Name, Contact Number, and Payment Method.', 'text-red-600');
+                return;
+            }
+
+            if (paymentMethod === 'cash' && !deliveryAddress) {
+                showModal('messageModal', 'Please provide your delivery address for Cash in Hand transaction.', 'text-red-600');
+                return;
+            }
+
+            const orderData = {
+                productId, // Store the product ID
+                productName,
+                productPrice,
+                fullName,
+                contactNumber,
+                emailAddress: emailAddress || 'N/A', // Store N/A if email is empty
+                paymentMethod,
+                deliveryAddress: paymentMethod === 'cash' ? deliveryAddress : 'N/A' // Store N/A if not cash
+            };
+
+            await submitOrder(orderData);
+        };
+
+        window.showThankYouMessage = function() {
+            const thankYou = document.getElementById('thank-you-message');
+            thankYou.classList.add('show');
+            setTimeout(() => {
+                thankYou.classList.remove('show');
+            }, 20000); // 20 seconds
+        };
+
+        // --- Admin Login/Logout Logic ---
+        window.openAdminLoginModal = function() {
+            showModal('adminLoginModal');
+            document.getElementById('admin-login-email').value = '';
+            document.getElementById('admin-login-password').value = '';
+        };
+
+        window.processAdminLogin = async function() {
+            const email = document.getElementById('admin-login-email').value.trim();
+            const password = document.getElementById('admin-login-password').value.trim();
+
+            if (!email || !password) {
+                showModal('messageModal', 'Please enter both email and password.', 'text-red-600');
+                return;
+            }
+
+            try {
+                showModal('messageModal', 'Logging in...', 'text-blue-600');
+                await signInWithEmailAndPassword(auth, email, password);
+                hideModal('adminLoginModal');
+                showModal('messageModal', 'Login successful!', 'text-green-600');
+                // Check if the logged-in user is the admin
+                if (auth.currentUser && auth.currentUser.email === ADMIN_EMAIL) {
+                    isAdmin = true;
+                    document.getElementById('admin-logout-btn-container').classList.remove('hidden');
+                    renderPage('admin'); // Redirect to admin page on successful admin login
+                } else {
+                    // If a non-admin user logs in, they just stay on the shop page (or redirect as desired)
+                    showModal('messageModal', 'You are logged in, but not as an admin.', 'text-yellow-600');
+                    renderPage('shop'); // Keep non-admin users on shop page
+                }
+            } catch (error) {
+                console.error("Firebase Auth Error:", error);
+                let errorMessage = 'Login failed. Please check your credentials.';
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                    errorMessage = 'Invalid email or password.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email format.';
+                }
+                showModal('messageModal', errorMessage, 'text-red-600');
+            }
+        };
+
+        window.adminLogout = async function() {
+            try {
+                showModal('messageModal', 'Logging out...', 'text-blue-600');
+                await signOut(auth);
+                isAdmin = false;
+                document.getElementById('admin-logout-btn-container').classList.add('hidden');
+                showModal('messageModal', 'Logged out successfully!', 'text-green-600');
+                renderPage('shop'); // Redirect to shop page after logout
+            } catch (error) {
+                console.error("Error logging out:", error);
+                showModal('messageModal', 'Error logging out. Please try again.', 'text-red-600');
+            }
+        };
+
+
+        window.showAddProductForm = function() {
+            if (!isAdmin) {
+                showModal('messageModal', 'Access Denied. You must be logged in as an admin to add products.', 'text-red-600');
+                return;
+            }
+            showModal('add-new-product-modal');
+            document.getElementById('add-product-form').reset();
+            document.getElementById('add-product-preview').src = 'https://placehold.co/250x180/FF8C00/FFFFFF?text=Upload+Image';
+            populateCategoryDropdowns(); // Ensure category dropdown is populated
+        };
+
+        window.addNewProduct = async function() {
+            const nameInput = document.getElementById('new-product-name');
+            const descriptionInput = document.getElementById('new-product-description');
+            const priceInput = document.getElementById('new-product-price');
+            const imageUrlInput = document.getElementById('add-product-preview');
+            const categorySelect = document.getElementById('new-product-category');
+
+            const name = nameInput.value.trim();
+            const description = descriptionInput.value.trim();
+            const price = parseFloat(priceInput.value);
+            const imageUrl = imageUrlInput.src;
+            const category = categorySelect.value;
+
+            if (!name || !description || isNaN(price) || price <= 0 || !category) {
+                showModal('messageModal', 'Please fill all fields correctly for the new product (Name, Description, Price, Category).', 'text-red-600');
+                return;
+            }
+
+            await addProduct({ name, description, price, imageUrl, category });
+            hideModal('add-new-product-modal');
+        };
+
+        // --- Category Management Functions ---
+        window.showCategoryManagementModal = function() {
+            if (!isAdmin) {
+                showModal('messageModal', 'Access Denied. You must be logged in as an admin to manage categories.', 'text-red-600');
+                return;
+            }
+            showModal('categoryManagementModal');
+            displayCategoriesForManagement();
+        };
+
+        function displayCategoriesForManagement() {
+            const categoryList = document.getElementById('category-management-list');
+            if (!categoryList) return;
+            categoryList.innerHTML = ''; // Clear existing categories
+
+            if (allCategories.length === 0) {
+                categoryList.innerHTML = '<p class="text-center text-gray-600 text-lg mt-4">No categories added yet.</p>';
+            }
+
+            allCategories.forEach(cat => {
+                const categoryItem = `
+                    <li class="flex justify-between items-center bg-gray-50 p-3 rounded-md mb-2 border border-gray-200">
+                        <span class="text-lg font-medium">${cat.name}</span>
+                        <div>
+                            <button class="btn-secondary bg-blue-500 hover:bg-blue-600 py-1.5 px-3 text-sm mr-2" onclick="editCategory('${cat.id}', '${cat.name}')">Edit</button>
+                            <button class="btn-primary bg-red-500 hover:bg-red-600 py-1.5 px-3 text-sm" onclick="deleteCategory('${cat.id}')">Delete</button>
+                        </div>
+                    </li>
+                `;
+                categoryList.innerHTML += categoryItem;
+            });
+        }
+
+        window.addCategory = async function() {
+            const newCategoryNameInput = document.getElementById('new-category-name');
+            const newCategoryName = newCategoryNameInput.value.trim();
+
+            if (!newCategoryName) {
+                showModal('messageModal', 'Category name cannot be empty.', 'text-red-600');
+                return;
+            }
+            if (allCategories.some(cat => cat.name.toLowerCase() === newCategoryName.toLowerCase())) {
+                showModal('messageModal', 'Category already exists.', 'text-red-600');
+                return;
+            }
+
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Adding category...', 'text-blue-600');
+                const categoriesCollectionRef = collection(db, `artifacts/${__app_id}/public/data/categories`);
+                await addDoc(categoriesCollectionRef, { name: newCategoryName });
+                newCategoryNameInput.value = ''; // Clear input
+                showModal('messageModal', 'Category added successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error adding category: ", e);
+                showModal('messageModal', 'Error adding category. Please try again.', 'text-red-600');
+            }
+        };
+
+        window.editCategory = function(categoryId, currentName) {
+            const newName = prompt(`Edit category name for "${currentName}":`, currentName);
+            if (newName === null) return; // User cancelled
+            const trimmedNewName = newName.trim();
+
+            if (!trimmedNewName) {
+                showModal('messageModal', 'Category name cannot be empty.', 'text-red-600');
+                return;
+            }
+            if (trimmedNewName.toLowerCase() === currentName.toLowerCase()) {
+                showModal('messageModal', 'No change detected.', 'text-yellow-600');
+                return;
+            }
+            if (allCategories.some(cat => cat.name.toLowerCase() === trimmedNewName.toLowerCase() && cat.id !== categoryId)) {
+                showModal('messageModal', 'Another category with this name already exists.', 'text-red-600');
+                return;
+            }
+
+            updateCategory(categoryId, { name: trimmedNewName });
+        };
+
+        async function updateCategory(categoryId, updates) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Updating category...', 'text-blue-600');
+                const categoryDocRef = doc(db, `artifacts/${__app_id}/public/data/categories`, categoryId);
+                await updateDoc(categoryDocRef, updates);
+                showModal('messageModal', 'Category updated successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error updating category: ", e);
+                showModal('messageModal', 'Error updating category. Please try again.', 'text-red-600');
+            }
+        };
+
+        window.deleteCategory = async function(categoryId) {
+            if (!confirm('Are you sure you want to delete this category? Products assigned to this category will become "Uncategorized".')) {
+                return;
+            }
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                showModal('messageModal', 'Deleting category...', 'text-blue-600');
+                const categoryDocRef = doc(db, `artifacts/${__app_id}/public/data/categories`, categoryId);
+                await deleteDoc(categoryDocRef);
+
+                // Also update products that belong to this category to 'Uncategorized'
+                const productsToUpdateQuery = query(collection(db, `artifacts/${__app_id}/public/data/products`), where("category", "==", allCategories.find(c => c.id === categoryId)?.name || ''));
+                const productsSnapshot = await getDocs(productsToUpdateQuery);
+                const batch = db.batch();
+                productsSnapshot.forEach((productDoc) => {
+                    batch.update(productDoc.ref, { category: 'Uncategorized' });
+                });
+                await batch.commit();
+
+                showModal('messageModal', 'Category deleted and products updated!', 'text-green-600');
+            } catch (e) {
+                console.error("Error deleting category: ", e);
+                showModal('messageModal', 'Error deleting category. Please try again.', 'text-red-600');
+            }
+        };
+
+        // --- Populate Category Dropdowns for Products ---
+        function populateCategoryDropdowns() {
+            const categoryDropdowns = document.querySelectorAll('select[id$="-category"]'); // Selects all elements whose ID ends with "-category"
+            categoryDropdowns.forEach(dropdown => {
+                const currentSelectedValue = dropdown.value; // Preserve current selection
+                dropdown.innerHTML = '<option value="">-- Select Category --</option>';
+                dropdown.innerHTML += '<option value="Uncategorized">Uncategorized</option>'; // Default option
+
+                allCategories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.name;
+                    option.textContent = cat.name;
+                    dropdown.appendChild(option);
+                });
+                // Restore selection if it still exists
+                if (currentSelectedValue && Array.from(dropdown.options).some(option => option.value === currentSelectedValue)) {
+                    dropdown.value = currentSelectedValue;
+                } else {
+                    dropdown.value = 'Uncategorized'; // Default to Uncategorized if previous value is gone
+                }
+            });
+        }
+
+        // --- Hamburger Menu Logic ---
+        window.toggleHamburgerMenu = function() {
+            const menu = document.getElementById('hamburger-menu');
+            const icon = document.getElementById('hamburger-icon');
+            menu.classList.toggle('open');
+            icon.classList.toggle('open');
+        };
+
+        window.hideHamburgerMenu = function() {
+            const menu = document.getElementById('hamburger-menu');
+            const icon = document.getElementById('hamburger-icon');
+            menu.classList.remove('open');
+            icon.classList.remove('open');
+        };
+
+        function renderCategoryMenu() {
+            const categoryMenu = document.getElementById('category-menu-list');
+            if (!categoryMenu) return;
+            categoryMenu.innerHTML = ''; // Clear existing items
+
+            // Add "All Products" option
+            let allProductsItem = document.createElement('li');
+            let allProductsLink = document.createElement('a');
+            allProductsLink.href = "#";
+            allProductsLink.textContent = "All Products";
+            allProductsLink.onclick = (e) => {
+                e.preventDefault();
+                filterProducts('All Products');
+                hideHamburgerMenu();
+                renderPage('shop'); // Ensure we are on the shop page
+            };
+            allProductsItem.appendChild(allProductsLink);
+            categoryMenu.appendChild(allProductsItem);
+
+            // Add dynamic categories
+            allCategories.forEach(cat => {
+                let listItem = document.createElement('li');
+                let link = document.createElement('a');
+                link.href = "#";
+                link.textContent = cat.name;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    filterProducts(cat.name);
+                    hideHamburgerMenu();
+                    renderPage('shop'); // Ensure we are on the shop page
+                };
+                listItem.appendChild(link);
+                categoryMenu.appendChild(listItem);
+            });
+        }
+    </script>
+
+    <!-- Hamburger Menu Sidebar -->
+    <div id="hamburger-menu" class="hamburger-menu">
+        <button class="menu-close-button" onclick="toggleHamburgerMenu()">&times;</button>
+        <h3 class="text-2xl font-bold text-white mb-6">Categories</h3>
+        <ul id="category-menu-list">
+            <!-- Categories will be rendered here by JavaScript -->
+        </ul>
+    </div>
+
+    <!-- Header Section -->
+    <header class="header-theme py-4 px-4 md:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center h-full">
+            <button class="hamburger-icon" id="hamburger-icon" onclick="toggleHamburgerMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-0 cursor-pointer ml-16" onclick="renderPage('shop')">Flourish Boutique</h1>
+            <div class="flex items-center space-x-4">
+                <button id="shop-now-btn" class="btn-secondary text-base py-2 px-6" onclick="document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });">Shop Now</button>
+                <button class="btn-secondary text-base py-2 px-6" onclick="openAdminLoginModal()">Admin Login</button>
+                <div id="admin-logout-btn-container" class="hidden">
+                    <button class="btn-primary text-base py-2 px-6 bg-red-500 hover:bg-red-600" onclick="adminLogout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- Hero Section (only visible on shop page) -->
+        <section id="hero-section" class="bg-gradient-to-r from-orange-500 to-orange-700 text-white py-24 px-4 md:px-8 text-center shadow-lg">
+            <h2 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight leading-tight">Welcome to Flourish Boutique</h2>
+            <p class="text-xl md:text-2xl mb-8 font-light max-w-3xl mx-auto opacity-90">Discover unique finds that inspire and delight.</p>
+            <div class="mt-8 text-lg font-semibold flex items-center justify-center space-x-2">
+                <span class="text-yellow-300 text-2xl">&#128274;</span> <!-- Padlock icon -->
+                <span>Your Secure Shopping Destination</span>
+            </div>
+        </section>
+
+        <!-- Products Section -->
+        <section id="products-section" class="py-16 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-10">Our Products</h2>
+                <div class="mb-10 flex justify-center">
+                    <input type="text" id="search-input" onkeyup="filterProducts()" placeholder="Search products by name or description..." class="w-full max-w-md p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                    <!-- Products will be loaded here by JavaScript -->
+                </div>
+
+                <!-- Thank You Message -->
+                <div id="thank-you-message" class="thank-you-message text-center text-2xl mt-12">
+                    Thank you for your order!
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Panel Section -->
+        <section id="admin-panel" class="hidden py-16 px-4 md:px-8">
+            <div class="max-w-6xl mx-auto content-card">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-10">Admin Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-center">
+                    <div class="bg-orange-50 p-6 rounded-lg shadow-sm border border-orange-200">
+                        <p class="text-orange-700 text-lg font-semibold">Total Products</p>
+                        <p id="admin-product-count" class="text-4xl font-bold text-orange-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-orange-50 p-6 rounded-lg shadow-sm border border-orange-200">
+                        <p class="text-orange-700 text-lg font-semibold">Total Orders</p>
+                        <p id="admin-order-count" class="text-4xl font-bold text-orange-800 mt-2">0</p>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">Customer Orders</h3>
+                <div class="text-center mb-6 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button class="btn-secondary py-2.5 px-6 text-base" onclick="renderPage('shop')">Back to Shop</button>
+                    <button class="btn-primary py-2.5 px-6 text-base" onclick="renderPage('edit')">Go to Edit Mode</button>
+                </div>
+                <div id="admin-orders-list" class="space-y-4">
+                    <!-- Customer orders will be displayed here by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Edit Mode Panel Section -->
+        <section id="edit-mode-panel" class="hidden py-16 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto content-card">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-10">Admin Edit Mode - Manage Products</h2>
+                <div class="text-center mb-8 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button class="btn-primary bg-green-600 hover:bg-green-700 py-2.5 px-6 text-base" onclick="showAddProductForm()">Add New Product</button>
+                    <button class="btn-primary bg-blue-600 hover:bg-blue-700 py-2.5 px-6 text-base" onclick="showCategoryManagementModal()">Manage Categories</button>
+                    <button class="btn-secondary py-2.5 px-6 text-base" onclick="renderPage('admin')">Back to Admin Dashboard</button>
+                    <button class="btn-secondary py-2.5 px-6 text-base" onclick="renderPage('shop')">Back to Shop</button>
+                </div>
+                <div id="editable-products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                    <!-- Editable products will be loaded here by JavaScript -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Product Detail Modal -->
+    <div id="productDetailModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2 xl:w-2/5">
+            <button class="close-button" onclick="hideModal('productDetailModal')">&times;</button>
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="md:w-1/2">
+                    <img id="detail-product-image" src="" alt="Product Image" class="w-full h-auto rounded-lg shadow-md mb-4">
+                </div>
+                <div class="md:w-1/2 flex flex-col justify-between">
+                    <div>
+                        <h2 id="detail-product-name" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+                        <p id="detail-product-description" class="text-gray-700 text-base mb-4"></p>
+                        <p class="text-gray-600 text-sm mb-2">Category: <span id="detail-product-category" class="font-medium"></span></p>
+                        <p id="detail-product-price" class="text-4xl font-bold text-orange-700 mb-6"></p>
+                        <input type="hidden" id="detail-product-id">
+                    </div>
+                    <button class="btn-primary w-full text-lg py-3" onclick="showOrderFormFromDetail()">Add to Order</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2 xl:w-1/3">
+            <button class="close-button" onclick="hideModal('orderModal')">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Secure Checkout</h2>
+            <p class="text-center text-sm text-gray-600 mb-6 flex items-center justify-center">
+                <span class="text-green-600 mr-2 text-xl">&#128274;</span> Your information is safe and secure.
+            </p>
+            <form id="order-form" class="space-y-4">
+                <input type="hidden" id="order-product-id">
+                <input type="hidden" id="order-product-name">
+                <input type="hidden" id="order-product-price">
+
+                <div>
+                    <label for="full-name" class="block text-gray-700 text-sm font-bold mb-1">Full Name <span class="text-red-500">*</span>:</label>
+                    <input type="text" id="full-name" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="John Doe">
+                </div>
+                <div>
+                    <label for="contact-number" class="block text-gray-700 text-sm font-bold mb-1">Contact Number <span class="text-red-500">*</span>:</label>
+                    <input type="tel" id="contact-number" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="+230 5xxxxxxx">
+                </div>
+                <div>
+                    <label for="email-address" class="block text-gray-700 text-sm font-bold mb-1">Email Address (Optional):</label>
+                    <input type="email" id="email-address" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="your.email@example.com">
+                </div>
+                <div>
+                    <label for="payment-method" class="block text-gray-700 text-sm font-bold mb-1">Method of Payment <span class="text-red-500">*</span>:</label>
+                    <select id="payment-method" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white" onchange="handlePaymentMethodChange()" required>
+                        <option value="">-- Select Payment Method --</option>
+                        <option value="juice">Juice by MCB</option>
+                        <option value="cash">Cash in Hand Transaction</option>
+                    </select>
+                </div>
+                <div id="payment-details" class="mt-3 p-3 bg-orange-50 rounded-md text-orange-800 border border-orange-200">
+                    <!-- Payment details will appear here based on selection -->
+                </div>
+                <div id="cash-in-hand-address" class="hidden mt-3">
+                    <label for="delivery-address" class="block text-gray-700 text-sm font-bold mb-1">Delivery Address <span class="text-red-500">*</span>:</label>
+                    <textarea id="delivery-address" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" rows="3" placeholder="Enter your full delivery address"></textarea>
+                </div>
+                <button type="button" class="btn-primary w-full mt-6 text-base py-2.5" onclick="processOrder()">Proceed to Secure Checkout <span id="order-spinner" class="spinner hidden"></span></button>
+            </form>
+            <p class="text-center text-xs text-gray-500 mt-4">By clicking "Proceed to Secure Checkout", you agree to our <a href="#" class="text-orange-600 hover:underline">Terms of Service</a>.</p>
+        </div>
+    </div>
+
+    <!-- Message Modal (for general messages like errors/success) -->
+    <div id="messageModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-1/2 lg:w-1/3 p-8 text-center">
+            <button class="close-button" onclick="hideModal('messageModal')">&times;</button>
+            <p id="modal-message" class="text-xl font-semibold mb-6"></p>
+            <button class="btn-primary px-6 py-2.5" onclick="hideModal('messageModal')">OK</button>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal (repurposed from password modal) -->
+    <div id="adminLoginModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-1/2 lg:w-1/4 p-8 text-center">
+            <button class="close-button" onclick="hideModal('adminLoginModal')">&times;</button>
+            <h3 class="text-xl font-bold text-gray-800 mb-5">Admin Login</h3>
+            <input type="email" id="admin-login-email" class="w-full p-2 border border-gray-300 rounded-sm mb-3 text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Admin Email">
+            <input type="password" id="admin-login-password" class="w-full p-2 border border-gray-300 rounded-sm mb-5 text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Password">
+            <button class="btn-primary w-full py-2.5" onclick="processAdminLogin()">Login</button>
+        </div>
+    </div>
+
+    <!-- Add New Product Modal -->
+    <div id="add-new-product-modal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2 xl:w-1/3 add-product-form-container">
+            <button class="close-button" onclick="hideModal('add-new-product-modal')">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Add New Product</h2>
+            <form id="add-product-form" class="space-y-4">
+                <div class="flex flex-col items-center">
+                    <label for="new-product-image" class="cursor-pointer mb-3 flex justify-center items-center h-40 w-full border border-dashed border-gray-300 rounded-md overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                        <img id="add-product-preview" src="https://placehold.co/250x180/FF8C00/FFFFFF?text=Upload+Image" alt="New Product Image" class="w-full h-full object-cover">
+                        <input type="file" id="new-product-image" class="hidden" accept="image/*" onchange="previewNewProductImage(event)">
+                    </label>
+                </div>
+                <div>
+                    <label for="new-product-name" class="block text-gray-700 text-sm font-bold mb-1">Product Name <span class="text-red-500">*</span>:</label>
+                    <input type="text" id="new-product-name" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="New Product Name">
+                </div>
+                <div>
+                    <label for="new-product-description" class="block text-gray-700 text-sm font-bold mb-1">Description <span class="text-red-500">*</span>:</label>
+                    <textarea id="new-product-description" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500 h-24 resize-y" required placeholder="A brief description of the product..."></textarea>
+                </div>
+                <div>
+                    <label for="new-product-price" class="block text-gray-700 text-sm font-bold mb-1">Price (Rs) <span class="text-red-500">*</span>:</label>
+                    <input type="number" id="new-product-price" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" step="0.01" required placeholder="999.99">
+                </div>
+                <div>
+                    <label for="new-product-category" class="block text-gray-700 text-sm font-bold mb-1">Category <span class="text-red-500">*</span>:</label>
+                    <select id="new-product-category" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white" required>
+                        <!-- Categories will be populated here by JavaScript -->
+                    </select>
+                </div>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mt-5">
+                    <button type="button" class="btn-primary flex-1 py-2.5 text-base" onclick="addNewProduct()">Save Product <span id="add-product-spinner" class="spinner hidden"></span></button>
+                    <button type="button" class="btn-secondary bg-gray-500 hover:bg-gray-600 flex-1 py-2.5 text-base" onclick="hideModal('add-new-product-modal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Management Modal -->
+    <div id="categoryManagementModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2">
+            <button class="close-button" onclick="hideModal('categoryManagementModal')">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Manage Product Categories</h2>
+            <div class="mb-6">
+                <label for="new-category-name" class="block text-gray-700 text-sm font-bold mb-1">Add New Category:</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="new-category-name" class="flex-grow p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:focus:ring-orange-500" placeholder="e.g., Electronics, Apparel">
+                    <button class="btn-primary py-2 px-4 text-base" onclick="addCategory()">Add</button>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Existing Categories:</h3>
+                <ul id="category-management-list" class="space-y-2">
+                    <!-- Categories will be listed here by JavaScript -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-6 px-4 md:px-8 text-center mt-auto">
+        <p class="text-base mb-2">Designed with ❤️ using HTML, JavaScript and Tailwind CSS</p>
+        <div class="text-sm text-gray-400 flex justify-center space-x-4">
+            <a href="#" class="text-orange-300 hover:underline">Privacy Policy</a>
+            <a href="#" class="text-orange-300 hover:underline">Terms of Service</a>
+        </div>
+    </footer>
+</body>
+</html>
