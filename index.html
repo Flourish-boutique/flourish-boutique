@@ -760,6 +760,7 @@
         }
 
         async function deleteOrder(orderId) {
+            console.log("Attempting to delete order with ID:", orderId); // Log the ID being deleted
             showConfirmationModal('Are you sure you want to delete this order? This action cannot be undone.', async () => {
                 try {
                     if (!db) { console.error("Firestore not initialized."); return; }
@@ -854,7 +855,13 @@
                 return;
             }
 
-            await updateProduct(productId, { name, description, price, stock, imageUrl, category });
+            try {
+                await updateProduct(productId, { name, description, price, stock, imageUrl, category });
+                filterProducts(); // Explicitly refresh the shop page products after saving edits
+            } catch (e) {
+                console.error("Error saving edited product: ", e);
+                showModal('messageModal', 'Error saving product changes. Please try again.', 'text-red-600');
+            }
         };
 
         // Function to preview image in edit mode
