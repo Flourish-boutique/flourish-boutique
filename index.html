@@ -301,7 +301,7 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global Firebase variables
@@ -314,9 +314,8 @@
         let allProducts = []; // Store all products for filtering
         let allCategories = []; // Store all categories
 
-        // Admin credentials (for demonstration purposes)
-        const ADMIN_EMAIL = 'admin@flourishboutique.com';
-        const ADMIN_PASSWORD_FIREBASE = 'admin123'; // This should be securely managed in a real app
+        // Admin password (hardcoded for direct access)
+        const ADMIN_PASSWORD = '1543zs03';
 
         // Current page state for SPA feel
         let currentPage = 'shop'; // 'shop', 'admin', 'edit'
@@ -338,13 +337,13 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
-                // Authenticate user
+                // Authenticate user (for general data access, not admin login)
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
-                        isAdmin = (user.email === ADMIN_EMAIL); // Simple admin check for demo
-                        console.log("Authenticated user ID:", userId, "Is Admin:", isAdmin);
-                        document.getElementById('admin-logout-btn-container').classList.toggle('hidden', !isAdmin);
+                        // isAdmin status is managed by the hardcoded password for admin panel access
+                        // The logout button visibility will be handled by the local 'isAdmin' flag
+                        console.log("Authenticated user ID:", userId);
                     } else {
                         // Sign in anonymously if no user is found or initial token is not provided
                         try {
@@ -364,8 +363,6 @@
                             userId = crypto.randomUUID(); // Fallback to a random ID if auth fails
                             console.log("Using random user ID as fallback:", userId);
                         }
-                        isAdmin = false;
-                        document.getElementById('admin-logout-btn-container').classList.add('hidden');
                     }
                     isAuthReady = true; // Set auth ready flag
                     initializeFirestoreListeners(); // Start listening to Firestore data
@@ -471,15 +468,30 @@
             document.getElementById('hamburger-icon').classList.toggle('hidden', pageName !== 'shop');
             document.getElementById('shop-now-btn').classList.toggle('hidden', pageName !== 'shop');
 
+            // Show/hide logout button based on isAdmin state
+            document.getElementById('admin-logout-btn-container').classList.toggle('hidden', !isAdmin);
+
 
             if (pageName === 'shop') {
                 document.getElementById('hero-section').classList.remove('hidden');
                 document.getElementById('products-section').classList.remove('hidden');
                 document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
             } else if (pageName === 'admin') {
+                // Only allow access if isAdmin is true
+                if (!isAdmin) {
+                    showModal('messageModal', 'Access Denied. Please log in as Admin.', 'text-red-600');
+                    renderPage('shop'); // Redirect back to shop if not admin
+                    return;
+                }
                 document.getElementById('admin-panel').classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else if (pageName === 'edit') {
+                // Only allow access if isAdmin is true
+                if (!isAdmin) {
+                    showModal('messageModal', 'Access Denied. Please log in as Admin.', 'text-red-600');
+                    renderPage('shop'); // Redirect back to shop if not admin
+                    return;
+                }
                 document.getElementById('edit-mode-panel').classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
@@ -867,53 +879,31 @@
             }, 20000); // 20 seconds
         };
 
-        // --- Admin Login/Logout Logic ---
+        // --- Admin Login/Logout Logic (using hardcoded password) ---
         window.openAdminLoginModal = function() {
             showModal('adminLoginModal');
-            document.getElementById('admin-login-email').value = '';
-            document.getElementById('admin-login-password').value = '';
+            document.getElementById('admin-password-input').value = ''; // Clear input
         };
 
-        window.processAdminLogin = async function() {
-            const email = document.getElementById('admin-login-email').value.trim();
-            const password = document.getElementById('admin-login-password').value.trim();
+        window.processAdminLogin = function() {
+            const passwordInput = document.getElementById('admin-password-input').value;
+            hideModal('adminLoginModal'); // Hide password modal immediately
 
-            if (!email || !password) {
-                showModal('messageModal', 'Please enter both email and password.', 'text-red-600');
-                return;
-            }
-
-            try {
-                showModal('messageModal', 'Logging in...', 'text-blue-600');
-                await signInWithEmailAndPassword(auth, email, password);
-                hideModal('adminLoginModal');
-                showModal('messageModal', 'Login successful!', 'text-green-600');
-                // Check if the logged-in user is the admin
-                if (auth.currentUser && auth.currentUser.email === ADMIN_EMAIL) {
-                    isAdmin = true;
-                    document.getElementById('admin-logout-btn-container').classList.remove('hidden');
-                    renderPage('admin'); // Redirect to admin page on successful admin login
-                } else {
-                    // If a non-admin user logs in, they just stay on the shop page (or redirect as desired)
-                    showModal('messageModal', 'You are logged in, but not as an admin.', 'text-yellow-600');
-                    renderPage('shop'); // Keep non-admin users on shop page
-                }
-            } catch (error) {
-                console.error("Firebase Auth Error:", error);
-                let errorMessage = 'Login failed. Please check your credentials.';
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-                    errorMessage = 'Invalid email or password.';
-                } else if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Invalid email format.';
-                }
-                showModal('messageModal', errorMessage, 'text-red-600');
+            if (passwordInput === ADMIN_PASSWORD) {
+                isAdmin = true; // Set admin flag
+                document.getElementById('admin-logout-btn-container').classList.remove('hidden'); // Show logout button
+                showModal('messageModal', 'Admin Login successful!', 'text-green-600');
+                renderPage('admin'); // Redirect to admin page
+            } else {
+                isAdmin = false; // Ensure admin flag is false
+                document.getElementById('admin-logout-btn-container').classList.add('hidden'); // Hide logout button
+                showModal('messageModal', 'Incorrect Password. Access Denied.', 'text-red-600');
             }
         };
 
         window.adminLogout = async function() {
             try {
-                showModal('messageModal', 'Logging out...', 'text-blue-600');
-                await signOut(auth);
+                // For hardcoded password, just reset the isAdmin flag and UI
                 isAdmin = false;
                 document.getElementById('admin-logout-btn-container').classList.add('hidden');
                 showModal('messageModal', 'Logged out successfully!', 'text-green-600');
@@ -1329,13 +1319,12 @@
         </div>
     </div>
 
-    <!-- Admin Login Modal (repurposed from password modal) -->
+    <!-- Admin Login Modal (using hardcoded password) -->
     <div id="adminLoginModal" class="modal-overlay hidden">
         <div class="modal-content-base w-full md:w-1/2 lg:w-1/4 p-8 text-center">
             <button class="close-button" onclick="hideModal('adminLoginModal')">&times;</button>
             <h3 class="text-xl font-bold text-gray-800 mb-5">Admin Login</h3>
-            <input type="email" id="admin-login-email" class="w-full p-2 border border-gray-300 rounded-sm mb-3 text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Admin Email">
-            <input type="password" id="admin-login-password" class="w-full p-2 border border-gray-300 rounded-sm mb-5 text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Password">
+            <input type="password" id="admin-password-input" class="w-full p-2 border border-gray-300 rounded-sm mb-5 text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Password">
             <button class="btn-primary w-full py-2.5" onclick="processAdminLogin()">Login</button>
         </div>
     </div>
@@ -1408,4 +1397,3 @@
     </footer>
 </body>
 </html>
-h
