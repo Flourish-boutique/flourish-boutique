@@ -356,26 +356,33 @@
                 db = getFirestore(app);
                 auth = getAuth(app);
 
+                // Display initial auth status message
+                updateAuthStatusMessage('Initializing authentication...');
+
                 // Authenticate user (for general data access, not admin login)
                 onAuthStateChanged(auth, async (user) => {
                     if (user) {
                         userId = user.uid;
                         console.log("Authenticated user ID:", userId);
+                        updateAuthStatusMessage(`Authenticated: ${userId.substring(0, 8)}...`);
                     } else {
                         try {
                             if (initialAuthToken) {
                                 await signInWithCustomToken(auth, initialAuthToken);
                                 userId = auth.currentUser.uid;
                                 console.log("Signed in with custom token. User ID:", userId);
+                                updateAuthStatusMessage(`Authenticated: ${userId.substring(0, 8)}...`);
                             } else {
                                 await signInAnonymously(auth);
                                 userId = auth.currentUser.uid;
                                 console.log("Signed in anonymously. User ID:", userId);
+                                updateAuthStatusMessage(`Authenticated: ${userId.substring(0, 8)}... (Anonymous)`);
                             }
                         } catch (error) {
                             console.error("Error during anonymous sign-in or custom token sign-in:", error);
                             userId = crypto.randomUUID(); // Fallback to a random ID if auth fails
                             console.log("Using random user ID as fallback:", userId);
+                            updateAuthStatusMessage('Authentication failed. Data access might be limited.', 'text-red-600');
                         }
                     }
                     isAuthReady = true; // Set auth ready flag
@@ -386,8 +393,19 @@
             } catch (error) {
                 console.error("Failed to initialize Firebase:", error);
                 showModal('messageModal', 'Failed to initialize the application. Please try again later. Check your browser console for errors.', 'text-red-600');
+                updateAuthStatusMessage('Firebase initialization failed!', 'text-red-600');
             }
         };
+
+        // Function to update the auth status message in the UI
+        function updateAuthStatusMessage(message, colorClass = 'text-gray-600') {
+            const statusElement = document.getElementById('auth-status-message');
+            if (statusElement) {
+                statusElement.textContent = message;
+                statusElement.className = `text-center text-sm mt-2 ${colorClass}`;
+            }
+        }
+
 
         // --- Dynamic Header Scroll Logic ---
         let lastScrollY = 0;
@@ -627,6 +645,11 @@
         async function addProduct(product) {
             try {
                 if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to add product before authentication was ready or user was null.");
+                    return;
+                }
                 showModal('messageModal', 'Adding product...', 'text-blue-600');
                 const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`); // Use appId
                 await addDoc(productsCollectionRef, product);
@@ -636,13 +659,18 @@
                 showModal('messageModal', 'Product added successfully and is now visible in the shop!', 'text-green-600'); // Added confirmation
             } catch (e) {
                 console.error("Error adding product to Firestore: ", e);
-                showModal('messageModal', 'Error adding product. Please try again.', 'text-red-600');
+                showModal('messageModal', `Error adding product: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
             }
         }
 
         async function updateProduct(productId, updates) {
             try {
                 if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to update product before authentication was ready or user was null.");
+                    return;
+                }
                 showModal('messageModal', 'Saving changes...', 'text-blue-600');
                 const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use appId
                 await updateDoc(productDocRef, updates);
@@ -650,7 +678,7 @@
                 showModal('messageModal', 'Product updated successfully and changes are live in the shop!', 'text-green-600'); // Added confirmation
             } catch (e) {
                 console.error("Error updating product in Firestore: ", e);
-                showModal('messageModal', 'Error updating product. Please try again.', 'text-red-600');
+                showModal('messageModal', `Error updating product: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
             }
         }
 
@@ -665,6 +693,11 @@
                 }
                 try {
                     if (!db) { console.error("Firestore not initialized."); return; }
+                    if (!isAuthReady || !auth.currentUser) {
+                        showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                        console.error("Attempted to delete product before authentication was ready or user was null.");
+                        return;
+                    }
                     showModal('messageModal', 'Deleting product...', 'text-blue-600');
                     const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use appId
                     await deleteDoc(productDocRef);
@@ -672,7 +705,7 @@
                     showModal('messageModal', 'Product deleted successfully!', 'text-green-600');
                 } catch (e) {
                     console.error("Error deleting product from Firestore: ", e);
-                    showModal('messageModal', 'Error deleting product. Please try again.', 'text-red-600');
+                    showModal('messageModal', `Error deleting product: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
                     // If deletion fails, the onSnapshot listener will eventually re-add the card
                 }
             });
@@ -697,6 +730,11 @@
         async function submitOrder(orderData) {
             try {
                 if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to submit order before authentication was ready or user was null.");
+                    return;
+                }
 
                 const productId = orderData.productId;
                 const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use appId
@@ -738,6 +776,8 @@
                     errorMessage = "This product is now out of stock. Please choose another item.";
                 } else if (e.message.includes("does not exist")) {
                     errorMessage = "The product you tried to order no longer exists.";
+                } else if (e.message.includes("permission-denied")) { // Specific Firebase error for permission
+                    errorMessage = "Permission denied to submit order. Please check your internet connection or try again later.";
                 }
                 showModal('messageModal', errorMessage, 'text-red-600');
             }
@@ -1130,6 +1170,11 @@
 
             try {
                 if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to add category before authentication was ready or user was null.");
+                    return;
+                }
                 showModal('messageModal', 'Adding category...', 'text-blue-600');
                 const categoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/categories`); // Use appId
                 await addDoc(categoriesCollectionRef, { name: newCategoryName });
@@ -1137,7 +1182,7 @@
                 showModal('messageModal', 'Category added successfully!', 'text-green-600');
             } catch (e) {
                 console.error("Error adding category: ", e);
-                showModal('messageModal', 'Error adding category. Please try again.', 'text-red-600');
+                showModal('messageModal', `Error adding category: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
             }
         };
 
@@ -1170,13 +1215,18 @@
         async function updateCategory(categoryId, updates) {
             try {
                 if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to update category before authentication was ready or user was null.");
+                    return;
+                }
                 showModal('messageModal', 'Updating category...', 'text-blue-600');
                 const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use appId
                 await updateDoc(categoryDocRef, updates);
                 showModal('messageModal', 'Category updated successfully!', 'text-green-600');
             } catch (e) {
                 console.error("Error updating category: ", e);
-                showModal('messageModal', 'Error updating category. Please try again.', 'text-red-600');
+                showModal('messageModal', `Error updating category: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
             }
         };
 
@@ -1184,6 +1234,11 @@
             showConfirmationModal('Are you sure you want to delete this category? Products assigned to this category will become "N/A".', async () => {
                 try {
                     if (!db) { console.error("Firestore not initialized."); return; }
+                    if (!isAuthReady || !auth.currentUser) {
+                        showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                        console.error("Attempted to delete category before authentication was ready or user was null.");
+                        return;
+                    }
                     showModal('messageModal', 'Deleting category...', 'text-blue-600');
                     const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use appId
                     await deleteDoc(categoryDocRef);
@@ -1200,7 +1255,7 @@
                     showModal('messageModal', 'Category deleted and products updated!', 'text-green-600');
                 } catch (e) {
                     console.error("Error deleting category: ", e);
-                    showModal('messageModal', 'Error deleting category. Please try again.', 'text-red-600');
+                    showModal('messageModal', `Error deleting category: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
                 }
             });
         };
@@ -1308,6 +1363,9 @@
     </header>
 
     <main class="flex-grow">
+        <!-- Auth Status Message (for debugging on phone) -->
+        <div id="auth-status-message" class="text-center text-sm mt-2 text-gray-600"></div>
+
         <!-- Hero Section (only visible on shop page) -->
         <section id="hero-section" class="bg-gradient-to-r from-orange-500 to-orange-700 text-white py-24 px-4 md:px-8 text-center shadow-lg">
             <h2 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight leading-tight">Welcome to Flourish Boutique</h2>
