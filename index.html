@@ -436,13 +436,18 @@
 
         // Function to initialize Firestore listeners after auth is ready
         function initializeFirestoreListeners(currentAppId) { // Accept appId as parameter
-            if (!isAuthReady || !db) {
-                console.warn("Firestore not ready or DB not initialized. Skipping listener setup.");
+            if (!db) {
+                console.error("Firestore DB is not initialized. Cannot set up listeners.");
+                showModal('messageModal', 'Database not ready. Please refresh the page.', 'text-red-600');
                 return;
             }
+            // Removed the isAuthReady check here, as onAuthStateChanged handles it
+            // and we want listeners to attempt to attach as soon as db is ready.
 
             // Log the appId being used for debugging
             console.log("AppId being used by Firestore listeners:", currentAppId);
+            updateAuthStatusMessage(`App ID: ${currentAppId.substring(0, 8)}... (Auth: ${userId ? userId.substring(0,8) + '...' : 'N/A'})`, 'text-blue-600'); // Display AppId and User ID for verification
+
 
             // Listen for real-time updates to products
             const productsCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/products`);
@@ -456,7 +461,7 @@
                 displayEditableProducts(allProducts);
             }, (error) => {
                 console.error("Error fetching products:", error);
-                showModal('messageModal', 'Error loading products. Please refresh the page.', 'text-red-600');
+                showModal('messageModal', `Error loading products: ${error.message}. Please refresh the page.`, 'text-red-600');
             });
 
             // Listen for real-time updates to orders (for admin panel)
@@ -470,7 +475,7 @@
                 updateAdminDashboardStats(allProducts.length, orders.length);
             }, (error) => {
                 console.error("Error fetching orders:", error);
-                showModal('messageModal', 'Error loading orders for admin. Please refresh.', 'text-red-600');
+                showModal('messageModal', `Error loading orders for admin: ${error.message}. Please refresh.`, 'text-red-600');
             });
 
             // Listen for real-time updates to categories
@@ -485,7 +490,7 @@
                 populateCategoryDropdowns(); // Update product forms
             }, (error) => {
                 console.error("Error fetching categories:", error);
-                showModal('messageModal', 'Error loading categories. Please refresh the page.', 'text-red-600');
+                showModal('messageModal', `Error loading categories: ${error.message}. Please refresh the page.`, 'text-red-600');
             });
         }
 
