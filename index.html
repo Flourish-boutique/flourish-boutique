@@ -262,6 +262,9 @@
             list-style: none;
             padding: 0;
             margin-top: 2rem;
+            flex-grow: 1; /* Allow the list to grow and push admin button to bottom */
+            display: flex;
+            flex-direction: column;
         }
         .hamburger-menu ul li {
             margin-bottom: 1rem;
@@ -1797,6 +1800,19 @@
                 listItem.appendChild(link);
                 categoryMenu.appendChild(listItem);
             });
+
+            // Add Admin Login button at the very bottom of the menu
+            let adminLoginListItem = document.createElement('li');
+            adminLoginListItem.classList.add('mt-auto', 'pt-4'); // Push to bottom with some padding
+            let adminLoginButton = document.createElement('button');
+            adminLoginButton.classList.add('btn-secondary', 'w-full', 'py-2.5', 'text-base');
+            adminLoginButton.textContent = 'Admin Login';
+            adminLoginButton.onclick = () => {
+                openAdminLoginModal();
+                hideHamburgerMenu(); // Close menu after clicking login
+            };
+            adminLoginListItem.appendChild(adminLoginButton);
+            categoryMenu.appendChild(adminLoginListItem);
         }
     </script>
 
@@ -1805,7 +1821,7 @@
         <button class="menu-close-button" onclick="toggleHamburgerMenu()">&times;</button>
         <h3 class="text-2xl font-bold text-white mb-6">Categories</h3>
         <ul id="category-menu-list">
-            <!-- Categories will be rendered here by JavaScript -->
+            <!-- Categories and Admin Login button will be rendered here by JavaScript -->
         </ul>
     </div>
 
@@ -1820,7 +1836,7 @@
             <h1 class="text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-0 cursor-pointer ml-16" onclick="renderPage('shop')">Flourish Boutique</h1>
             <div class="flex items-center space-x-4">
                 <button id="shop-now-btn" class="btn-secondary text-base py-2 px-6" onclick="document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });">Shop Now</button>
-                <button class="btn-secondary text-base py-2 px-6" onclick="openAdminLoginModal()">Admin Login</button>
+                <!-- Admin Login button removed from here -->
                 <div id="admin-logout-btn-container" class="hidden">
                     <button class="btn-primary text-base py-2 px-6 bg-red-500 hover:bg-red-600" onclick="adminLogout()">Logout</button>
                 </div>
