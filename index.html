@@ -313,6 +313,7 @@
         let isAuthReady = false; // Flag to indicate if auth is ready
         let allProducts = []; // Store all products for filtering
         let allCategories = []; // Store all categories
+        let appId; // Declare appId in global scope
 
         // Admin password (hardcoded for direct access)
         const ADMIN_PASSWORD = '1543zs03';
@@ -336,7 +337,7 @@
                   appId: "1:34816935044:web:d529f7e13d5fdbd08caed1",
                   measurementId: "G-D4EZM4MHF7"
                 };
-                const appId = firebaseConfig.appId; // Use the appId from your config
+                appId = firebaseConfig.appId; // Assign to global appId
 
                 // The __initial_auth_token is specific to the Canvas environment.
                 // For local development, we'll sign in anonymously if no custom token is provided.
@@ -387,7 +388,7 @@
                     }
                     isAuthReady = true; // Set auth ready flag
                     // Now that auth is ready, initialize Firestore listeners
-                    initializeFirestoreListeners(appId); // Pass appId to listeners
+                    initializeFirestoreListeners(); // No need to pass appId, it's global
                     renderPage(currentPage); // Render initial page after auth is ready
                 });
 
@@ -436,7 +437,7 @@
 
 
         // Function to initialize Firestore listeners after auth is ready
-        function initializeFirestoreListeners(currentAppId) { // Accept appId as parameter
+        function initializeFirestoreListeners() { // appId is now global
             if (!db) {
                 console.error("Firestore DB is not initialized. Cannot set up listeners.");
                 showModal('messageModal', 'Database not ready. Please refresh the page.', 'text-red-600');
@@ -450,12 +451,12 @@
             }
 
             // Log the appId being used for debugging
-            console.log("AppId being used by Firestore listeners:", currentAppId);
-            updateAuthStatusMessage(`App ID: ${currentAppId.substring(0, 8)}... (Auth: ${userId ? userId.substring(0,8) + '...' : 'N/A'})`, 'text-blue-600'); // Display AppId and User ID for verification
+            console.log("AppId being used by Firestore listeners:", appId);
+            updateAuthStatusMessage(`App ID: ${appId.substring(0, 8)}... (Auth: ${userId ? userId.substring(0,8) + '...' : 'N/A'})`, 'text-blue-600'); // Display AppId and User ID for verification
 
 
             // Listen for real-time updates to products
-            const productsCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/products`);
+            const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`);
             onSnapshot(productsCollectionRef, (snapshot) => {
                 allProducts = []; // Clear previous products
                 snapshot.forEach(doc => {
@@ -470,7 +471,7 @@
             });
 
             // Listen for real-time updates to orders (for admin panel)
-            const ordersCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/orders`);
+            const ordersCollectionRef = collection(db, `artifacts/${appId}/public/data/orders`);
             onSnapshot(ordersCollectionRef, (snapshot) => {
                 const orders = [];
                 snapshot.forEach(doc => {
@@ -484,7 +485,7 @@
             });
 
             // Listen for real-time updates to categories
-            const categoriesCollectionRef = collection(db, `artifacts/${currentAppId}/public/data/categories`);
+            const categoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/categories`);
             onSnapshot(categoriesCollectionRef, (snapshot) => {
                 allCategories = [];
                 snapshot.forEach(doc => {
@@ -661,7 +662,7 @@
                     return;
                 }
                 showModal('messageModal', 'Adding product...', 'text-blue-600');
-                const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`); // Use appId
+                const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`); // Use global appId
                 await addDoc(productsCollectionRef, product);
                 console.log("Product added successfully to Firestore!");
                 document.getElementById('add-product-form').reset(); // Clear form
@@ -682,7 +683,7 @@
                     return;
                 }
                 showModal('messageModal', 'Saving changes...', 'text-blue-600');
-                const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use appId
+                const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use global appId
                 await updateDoc(productDocRef, updates);
                 console.log("Product updated successfully in Firestore!");
                 showModal('messageModal', 'Product updated successfully and changes are live in the shop!', 'text-green-600'); // Added confirmation
@@ -692,7 +693,7 @@
             }
         }
 
-        async function deleteProduct(productId) {
+        window.deleteProduct = async function(productId) {
             // Find the product card element to remove it immediately for instant visual feedback
             const productCardToRemove = document.querySelector(`#product-card-${productId}`);
 
@@ -709,7 +710,7 @@
                         return;
                     }
                     showModal('messageModal', 'Deleting product...', 'text-blue-600');
-                    const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use appId
+                    const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use global appId
                     await deleteDoc(productDocRef);
                     console.log("Product deleted successfully from Firestore!");
                     showModal('messageModal', 'Product deleted successfully!', 'text-green-600');
@@ -747,7 +748,7 @@
                 }
 
                 const productId = orderData.productId;
-                const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use appId
+                const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use global appId
 
                 showModal('messageModal', 'Processing your order...', 'text-blue-600');
 
@@ -768,7 +769,7 @@
                     transaction.update(productDocRef, { stock: currentStock - 1 });
 
                     // Add the order
-                    const ordersCollectionRef = collection(db, `artifacts/${appId}/public/data/orders`); // Use appId
+                    const ordersCollectionRef = collection(db, `artifacts/${appId}/public/data/orders`); // Use global appId
                     transaction.set(doc(ordersCollectionRef), { ...orderData, orderDate: new Date().toISOString() });
                 });
 
@@ -791,6 +792,28 @@
                 }
                 showModal('messageModal', errorMessage, 'text-red-600');
             }
+        }
+
+        window.deleteOrder = async function(orderId) { // Made it a window function
+            showConfirmationModal('Are you sure you want to delete this order? This action cannot be undone.', async () => {
+                try {
+                    if (!db) { console.error("Firestore not initialized."); return; }
+                    if (!isAuthReady || !auth.currentUser) {
+                        showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                        console.error("Attempted to delete order before authentication was ready or user was null.");
+                        return;
+                    }
+                    console.log(`Attempting to delete order: ${orderId} from path artifacts/${appId}/public/data/orders`); // Debug log
+                    showModal('messageModal', 'Deleting order...', 'text-blue-600');
+                    const orderDocRef = doc(db, `artifacts/${appId}/public/data/orders`, orderId); // Use global appId
+                    await deleteDoc(orderDocRef);
+                    console.log("Order deleted successfully from Firestore!");
+                    showModal('messageModal', 'Order deleted successfully!', 'text-green-600');
+                } catch (e) {
+                    console.error("Error deleting order from Firestore: ", e);
+                    showModal('messageModal', `Error deleting order: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+                }
+            });
         }
 
         function displayOrders(orders) {
@@ -1186,7 +1209,7 @@
                     return;
                 }
                 showModal('messageModal', 'Adding category...', 'text-blue-600');
-                const categoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/categories`); // Use appId
+                const categoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/categories`); // Use global appId
                 await addDoc(categoriesCollectionRef, { name: newCategoryName });
                 newCategoryNameInput.value = ''; // Clear input
                 showModal('messageModal', 'Category added successfully!', 'text-green-600');
@@ -1231,7 +1254,7 @@
                     return;
                 }
                 showModal('messageModal', 'Updating category...', 'text-blue-600');
-                const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use appId
+                const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use global appId
                 await updateDoc(categoryDocRef, updates);
                 showModal('messageModal', 'Category updated successfully!', 'text-green-600');
             } catch (e) {
@@ -1250,11 +1273,11 @@
                         return;
                     }
                     showModal('messageModal', 'Deleting category...', 'text-blue-600');
-                    const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use appId
+                    const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use global appId
                     await deleteDoc(categoryDocRef);
 
                     // Also update products that belong to this category to 'N/A'
-                    const productsToUpdateQuery = query(collection(db, `artifacts/${appId}/public/data/products`), where("category", "==", allCategories.find(c => c.id === categoryId)?.name || '')); // Use appId
+                    const productsToUpdateQuery = query(collection(db, `artifacts/${appId}/public/data/products`), where("category", "==", allCategories.find(c => c.id === categoryId)?.name || '')); // Use global appId
                     const productsSnapshot = await getDocs(productsToUpdateQuery);
                     const batch = writeBatch(db); // Use writeBatch for multiple updates
                     productsSnapshot.forEach((productDoc) => {
