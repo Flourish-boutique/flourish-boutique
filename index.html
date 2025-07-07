@@ -583,7 +583,7 @@
                 // Determine if the product is out of stock
                 const isOutOfStock = product.stock === 0;
                 const orderButtonClass = isOutOfStock ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-primary';
-                const orderButtonText = isOutOfStock ? 'Out of Stock' : 'Click to Order';
+                const orderButtonText = isOutOfStock ? 'Out of Stock' : 'Add to Cart'; // Changed text to "Add to Cart"
                 const orderButtonDisabled = isOutOfStock ? 'disabled' : '';
 
                 const productCard = `
@@ -594,8 +594,17 @@
                             <p class="text-gray-600 text-sm mb-2 flex-grow overflow-hidden text-ellipsis whitespace-nowrap">${product.description}</p>
                             <p class="text-xl font-bold text-orange-700 mb-0">Rs ${parseFloat(product.price).toFixed(2)}</p>
                             <p class="text-xs text-gray-500 mt-1">Category: ${displayCategory}</p>
+                            <p class="text-xs text-gray-500 mt-1">Available Stock: ${product.stock}</p>
                         </div>
-                        <button class="${orderButtonClass} w-full mt-4 text-base py-2" ${orderButtonDisabled} onclick="showOrderFormFromDetail('${product.id}', '${product.name}', '${parseFloat(product.price).toFixed(2)}', ${product.stock})">
+                        <!-- Quantity Input -->
+                        <div class="flex items-center justify-center mt-3 mb-4">
+                            <label for="quantity-${product.id}" class="sr-only">Quantity</label>
+                            <input type="number" id="quantity-${product.id}" value="1" min="1" max="${product.stock}"
+                                class="w-24 p-2 border border-gray-300 rounded-md text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                onchange="if(this.value < 1) this.value = 1; if(this.value > ${product.stock}) this.value = ${product.stock};"
+                                ${isOutOfStock ? 'disabled' : ''}>
+                        </div>
+                        <button class="${orderButtonClass} w-full text-base py-2" ${orderButtonDisabled} onclick="showOrderFormFromDetail('${product.id}', '${product.name}', '${parseFloat(product.price).toFixed(2)}', ${product.stock}, document.getElementById('quantity-${product.id}').value)">
                             ${orderButtonText}
                         </button>
                     </div>
@@ -636,6 +645,17 @@
             document.getElementById('detail-product-stock').textContent = stockStatusText;
             document.getElementById('detail-product-stock').className = `font-semibold ${stockStatusColor} text-base mb-4`; // Apply color class
 
+            // Set up quantity input in detail modal
+            const detailQuantityInput = document.getElementById('detail-quantity-input');
+            detailQuantityInput.value = 1; // Default to 1
+            detailQuantityInput.min = 1;
+            detailQuantityInput.max = product.stock;
+            detailQuantityInput.disabled = product.stock === 0;
+            detailQuantityInput.onchange = () => {
+                if (detailQuantityInput.value < 1) detailQuantityInput.value = 1;
+                if (detailQuantityInput.value > product.stock) detailQuantityInput.value = product.stock;
+            };
+
             // Update the "Add to Order" button in the detail modal
             const detailOrderButton = document.getElementById('detail-modal-order-button');
             if (product.stock === 0) {
@@ -643,11 +663,11 @@
                 detailOrderButton.classList.add('opacity-50', 'cursor-not-allowed');
                 detailOrderButton.disabled = true;
             } else {
-                detailOrderButton.textContent = 'Add to Order';
+                detailOrderButton.textContent = 'Add to Cart'; // Changed text to "Add to Cart"
                 detailOrderButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 detailOrderButton.disabled = false;
             }
-            detailOrderButton.onclick = () => showOrderFormFromDetail(product.id, product.name, parseFloat(product.price).toFixed(2), product.stock);
+            detailOrderButton.onclick = () => showOrderFormFromDetail(product.id, product.name, parseFloat(product.price).toFixed(2), product.stock, detailQuantityInput.value);
 
 
             showModal('productDetailModal');
@@ -723,8 +743,17 @@
         }
 
         // --- Order Management Functions ---
-        window.showOrderFormFromDetail = function(productId, productName, productPrice, productStock) {
-            // Check stock before opening order form
+        window.showOrderFormFromDetail = function(productId, productName, productPrice, productStock, quantity) {
+            // Validate quantity against stock before opening order form
+            const selectedQuantity = parseInt(quantity);
+            if (isNaN(selectedQuantity) || selectedQuantity < 1) {
+                showModal('messageModal', 'Please enter a valid quantity (at least 1).', 'text-red-600');
+                return;
+            }
+            if (selectedQuantity > productStock) {
+                showModal('messageModal', `You can only order up to ${productStock} of this item.`, 'text-red-600');
+                return;
+            }
             if (productStock === 0) {
                 showModal('messageModal', 'This product is currently out of stock and cannot be ordered.', 'text-red-600');
                 return;
@@ -733,6 +762,8 @@
             document.getElementById('order-product-id').value = productId;
             document.getElementById('order-product-name').value = productName;
             document.getElementById('order-product-price').value = productPrice;
+            document.getElementById('order-quantity').value = selectedQuantity; // Set the quantity in the order modal
+            document.getElementById('order-total-price').textContent = `Total: Rs ${(parseFloat(productPrice) * selectedQuantity).toFixed(2)}`; // Calculate and display total price
 
             hideModal('productDetailModal'); // Hide product detail modal if it's open
             showModal('orderModal');
@@ -748,6 +779,7 @@
                 }
 
                 const productId = orderData.productId;
+                const quantity = parseInt(orderData.quantity); // Get quantity from orderData
                 const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use global appId
 
                 showModal('messageModal', 'Processing your order...', 'text-blue-600');
@@ -761,12 +793,12 @@
 
                     const currentStock = productDoc.data().stock;
 
-                    if (currentStock <= 0) {
-                        throw new Error("Product is out of stock!");
+                    if (currentStock < quantity) { // Check if enough stock for the requested quantity
+                        throw new Error("Not enough stock for the requested quantity!");
                     }
 
-                    // Decrement stock
-                    transaction.update(productDocRef, { stock: currentStock - 1 });
+                    // Decrement stock by the ordered quantity
+                    transaction.update(productDocRef, { stock: currentStock - quantity });
 
                     // Add the order
                     const ordersCollectionRef = collection(db, `artifacts/${appId}/public/data/orders`); // Use global appId
@@ -783,7 +815,9 @@
             catch (e) {
                 console.error("Error submitting order: ", e);
                 let errorMessage = 'Error submitting order. Please try again.';
-                if (e.message.includes("out of stock")) {
+                if (e.message.includes("Not enough stock")) {
+                    errorMessage = "Not enough stock for your requested quantity. Please reduce the quantity or choose another item.";
+                } else if (e.message.includes("out of stock")) {
                     errorMessage = "This product is now out of stock. Please choose another item.";
                 } else if (e.message.includes("does not exist")) {
                     errorMessage = "The product you tried to order no longer exists.";
@@ -836,7 +870,7 @@
                             <p class="font-bold text-lg text-gray-800 mb-1">${order.fullName}</p>
                             <p class="text-gray-700 text-sm">Contact: <span class="font-medium">${order.contactNumber}</span></p>
                             <p class="text-gray-700 text-sm">Email: <span class="font-medium">${order.emailAddress || 'N/A'}</span></p>
-                            <p class="text-gray-700 mt-2">Product: <span class="font-semibold">${order.productName}</span> (Rs ${order.productPrice})</p>
+                            <p class="text-gray-700 mt-2">Product: <span class="font-semibold">${order.productName}</span> (Qty: ${order.quantity || 1}) (Rs ${order.productPrice})</p> <!-- Display Quantity -->
                             <p class="text-gray-700 text-sm">Payment Method: <span class="font-medium">${order.paymentMethod === 'juice' ? 'Juice by MCB' : 'Cash in Hand'}</span></p>
                             ${order.deliveryAddress && order.deliveryAddress !== 'N/A' ? `<p class="text-gray-700 text-sm">Delivery Address: <span class="font-medium">${order.deliveryAddress}</span></p>` : ''}
                             <p class="text-xs text-gray-500 mt-2">Order ID: <span class="font-mono">${order.id}</span></p>
@@ -1029,10 +1063,12 @@
             const emailAddressInput = document.getElementById('email-address');
             const paymentMethodInput = document.getElementById('payment-method');
             const deliveryAddressInput = document.getElementById('delivery-address');
+            const orderQuantityInput = document.getElementById('order-quantity'); // Get quantity from order modal
 
             const productId = document.getElementById('order-product-id').value;
             const productName = document.getElementById('order-product-name').value;
             const productPrice = document.getElementById('order-product-price').value;
+            const quantity = parseInt(orderQuantityInput.value); // Parse quantity
 
             const fullName = fullNameInput.value.trim();
             const contactNumber = contactNumberInput.value.trim();
@@ -1051,10 +1087,17 @@
                 return;
             }
 
+            if (isNaN(quantity) || quantity < 1) { // Re-validate quantity here too
+                showModal('messageModal', 'Please enter a valid quantity for your order.', 'text-red-600');
+                return;
+            }
+
+
             const orderData = {
                 productId, // Store the product ID
                 productName,
                 productPrice,
+                quantity, // Store the ordered quantity
                 fullName,
                 contactNumber,
                 emailAddress: emailAddress || 'N/A', // Store N/A if email is empty
@@ -1485,8 +1528,14 @@
                         <p id="detail-product-price" class="text-4xl font-bold text-orange-700 mb-6"></p>
                         <p id="detail-product-stock" class="font-semibold text-base mb-4"></p> <!-- Stock Quantity Display -->
                         <input type="hidden" id="detail-product-id">
+                        <!-- Quantity input in product detail modal -->
+                        <div class="flex items-center justify-center mt-3 mb-4">
+                            <label for="detail-quantity-input" class="sr-only">Quantity</label>
+                            <input type="number" id="detail-quantity-input" value="1" min="1"
+                                class="w-24 p-2 border border-gray-300 rounded-md text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
                     </div>
-                    <button id="detail-modal-order-button" class="btn-primary w-full text-lg py-3">Add to Order</button>
+                    <button id="detail-modal-order-button" class="btn-primary w-full text-lg py-3">Add to Cart</button>
                 </div>
             </div>
         </div>
@@ -1505,6 +1554,9 @@
                 <input type="hidden" id="order-product-id">
                 <input type="hidden" id="order-product-name">
                 <input type="hidden" id="order-product-price">
+                <input type="hidden" id="order-quantity"> <!-- Hidden field to store quantity -->
+
+                <p id="order-total-price" class="text-xl font-bold text-center text-orange-700 mb-4">Total: Rs 0.00</p>
 
                 <div>
                     <label for="full-name" class="block text-gray-700 text-sm font-bold mb-1">Full Name <span class="text-red-500">*</span>:</label>
