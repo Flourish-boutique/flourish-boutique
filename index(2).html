@@ -1,0 +1,2137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flourish Boutique</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Star Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFF0E0; /* A slightly more pronounced light orange background */
+            color: #333333; /* Dark gray text */
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-top: 80px; /* Space for the fixed header height */
+            transition: padding-top 0.3s ease; /* Smooth transition for padding if header height changes */
+        }
+        main {
+            flex-grow: 1;
+        }
+        .header-theme {
+            background-color: #FF6347; /* Tomato - a vibrant orange */
+            color: white;
+            border-bottom: 1px solid #E0E0E0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed; /* Make the header fixed */
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100; /* Ensure it stays on top */
+            transition: transform 0.3s ease-out; /* Smooth slide transition */
+            transform: translateY(0); /* Default visible state */
+            height: 80px; /* Explicit height for the header */
+            display: flex; /* Use flexbox for internal alignment */
+            align-items: center; /* Vertically center content */
+        }
+        .header-hidden {
+            transform: translateY(-100%); /* Slide up to hide */
+        }
+        .btn-primary {
+            background-color: #FF8C00; /* DarkOrange */
+            color: white;
+            padding: 0.85rem 2rem;
+            border-radius: 0.75rem; /* More rounded */
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+        .btn-primary:hover {
+            background-color: #FF6347; /* Tomato */
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+        }
+        .btn-secondary {
+            background-color: #FFA07A; /* LightSalmon - a lighter orange accent */
+            color: #333333;
+            padding: 0.85rem 2rem;
+            border-radius: 0.75rem;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            font-weight: 600;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+        }
+        .btn-secondary:hover {
+            background-color: #FF8C69; /* Darker LightSalmon */
+            transform: translateY(-1px);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.15);
+        }
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+        .content-card, .modal-content-base {
+            background-color: white;
+            border-radius: 1.25rem; /* Even more rounded for a soft feel */
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); /* Soft, diffused shadow */
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            border: 1px solid #F0F0F0; /* Very light border */
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6); /* Slightly lighter overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content-base {
+            padding: 3rem;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+            transform: translateY(30px);
+            opacity: 0;
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+        .modal-overlay.show .modal-content-base {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .close-button {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            font-size: 2.25rem;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.2s ease;
+        }
+        .close-button:hover {
+            color: #333;
+        }
+        /* Updated thank you message styling */
+        .thank-you-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2.5rem 3.5rem;
+            border-radius: 1.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            color: #22c55e; /* Green */
+            font-weight: 700;
+            text-align: center;
+            font-size: 2.25rem; /* text-3xl */
+            z-index: 1001; /* Above other modals */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.6s ease-in-out, visibility 0.6s ease-in-out, transform 0.3s ease;
+            display: flex; /* Use flexbox for centering content */
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+        .thank-you-message.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .thank-you-message .fa-check-circle {
+            font-size: 4rem; /* Large check icon */
+            color: #22c55e;
+            margin-bottom: 1rem;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F5F5;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FF8C00; /* DarkOrange scrollbar */
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF6347;
+        }
+
+        /* Product card fade-in animation */
+        .product-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInSlideUp 0.5s ease-out forwards;
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 0.75rem; /* Further reduced padding for compactness */
+            border: 1px solid #F3F4F6;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative; /* For discount tag positioning */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Push button to bottom */
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+        @keyframes fadeInSlideUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Input field styling */
+        input[type="text"], input[type="tel"], input[type="email"], input[type="number"], input[type="password"], textarea, select {
+            border: 1px solid #D1D5DB;
+            border-radius: 0.5rem;
+            padding: 0.85rem 1.25rem;
+            font-size: 1rem;
+            color: #333;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        input[type="text"]:focus, input[type="tel"]:focus, input[type="email"]:focus, input[type="number"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #FF8C00; /* DarkOrange focus */
+            box-shadow: 0 0 0 4px rgba(255, 140, 0, 0.2); /* Orange glow */
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #FF8C00; /* Orange spinner */
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hamburger Menu Styles */
+        .hamburger-menu {
+            position: fixed;
+            top: 0;
+            left: -280px; /* Hidden by default */
+            width: 250px;
+            height: 100%;
+            background-color: #333; /* Dark background for menu */
+            color: white;
+            padding: 2rem 1rem;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+            transition: left 0.3s ease-out;
+            z-index: 999; /* Below modals, above main content */
+            display: flex;
+            flex-direction: column;
+        }
+        .hamburger-menu.open {
+            left: 0;
+        }
+        .hamburger-menu ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 2rem;
+            flex-grow: 1; /* Allow the list to grow and push admin button to bottom */
+            display: flex;
+            flex-direction: column;
+        }
+        .hamburger-menu ul li {
+            margin-bottom: 1rem;
+        }
+        .hamburger-menu ul li a {
+            display: block;
+            padding: 0.75rem 1rem;
+            color: white;
+            font-size: 1.125rem;
+            font-weight: 500;
+            text-decoration: none;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease;
+        }
+        .hamburger-menu ul li a:hover {
+            background-color: #555;
+        }
+        .hamburger-icon {
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 25px;
+            background: transparent;
+            border: none;
+            padding: 0;
+            z-index: 101; /* Above header content, but header is fixed */
+            position: absolute; /* Position relative to header */
+            left: 1.5rem; /* Adjust as needed */
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .hamburger-icon span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: white;
+            border-radius: 2px;
+            transition: all 0.3s ease-in-out;
+        }
+        .hamburger-icon.open span:nth-child(1) {
+            transform: translateY(11px) rotate(45deg);
+        }
+        .hamburger-icon.open span:nth-child(2) {
+            opacity: 0;
+        }
+        .hamburger-icon.open span:nth-child(3) {
+            transform: translateY(-11px) rotate(-45deg);
+        }
+        .menu-close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* Carousel specific styles */
+        #product-carousel {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth; /* Smooth scrolling for auto-swipe */
+        }
+        #product-carousel::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari, Opera*/
+        }
+        .carousel-product-card {
+            flex: 0 0 auto; /* Do not grow, do not shrink, base on content */
+            width: 180px; /* Further reduced width for carousel items */
+            margin-right: 0.75rem; /* Reduced space between cards */
+            scroll-snap-align: start;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInSlideUp 0.5s ease-out forwards;
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            padding: 0.75rem; /* Reduced padding */
+            border: 1px solid #F3F4F6;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative; /* For discount tag positioning */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .carousel-product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        }
+        .carousel-product-card img {
+            width: 100%;
+            height: 120px; /* Reduced image height */
+            object-fit: cover;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem; /* Reduced margin */
+        }
+
+        /* Image Enlarge Modal Specific Styles */
+        #imageEnlargeModal .modal-content-base {
+            background-color: transparent; /* Transparent background for image modal */
+            box-shadow: none; /* No shadow */
+            padding: 0; /* No padding */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 95%; /* Allow image to take more space */
+            max-height: 95%;
+        }
+        #imageEnlargeModal img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Ensure the whole image is visible */
+            border-radius: 0.5rem; /* Rounded corners for the enlarged image */
+        }
+        #imageEnlargeModal .close-button {
+            color: white; /* White close button for dark background */
+            text-shadow: 0 0 5px rgba(0,0,0,0.5); /* Shadow to make it visible */
+        }
+
+        /* New Styles for Product Card Redesign */
+        .product-image-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* 1:1 Aspect Ratio */
+            overflow: hidden;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .product-image-container img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .discount-tag {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #EF4444; /* Red-500 */
+            color: white;
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem; /* text-xs */
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .original-price {
+            text-decoration: line-through;
+            color: #9CA3AF; /* Gray-400 */
+            font-size: 0.875rem; /* text-sm */
+            margin-right: 0.5rem;
+        }
+        .current-price {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: bold;
+            color: #FF8C00; /* DarkOrange */
+        }
+        .savings-text {
+            font-size: 0.75rem; /* text-xs */
+            color: #22C55E; /* Green-500 */
+            font-weight: 600;
+        }
+        .sold-rating {
+            display: flex;
+            align-items: center;
+            font-size: 0.75rem; /* text-xs */
+            color: #6B7280; /* Gray-500 */
+            margin-top: 0.25rem;
+        }
+        .sold-rating .fa-star, .sold-rating .fa-star-half-alt {
+            color: #FBBF24; /* Amber-400 */
+            margin-left: 0.25rem;
+        }
+        .sold-rating .far.fa-star { /* Style for empty stars */
+            color: #D1D5DB; /* Light gray for empty stars */
+            margin-left: 0.25rem;
+        }
+        .product-card .btn-primary, .carousel-product-card .btn-primary {
+            font-size: 0.875rem; /* text-sm */
+            padding: 0.5rem 1rem; /* Smaller padding for button */
+            margin-top: 0.75rem; /* Space above button */
+        }
+        .product-card h3, .carousel-product-card h3 {
+            font-size: 1rem; /* text-base */
+            font-weight: 600;
+            color: #374151; /* Gray-700 */
+            margin-bottom: 0.25rem;
+            white-space: nowrap; /* Prevent wrapping */
+            overflow: hidden; /* Hide overflow */
+            text-overflow: ellipsis; /* Add ellipsis */
+        }
+        .product-card p.text-sm, .carousel-product-card p.text-sm {
+            height: auto; /* Allow description to take full height */
+            white-space: normal; /* Allow wrapping */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Limit to 2 lines */
+            -webkit-box-orient: vertical;
+            line-height: 1.2; /* Adjust line height for compactness */
+            margin-bottom: 0.5rem;
+        }
+        .product-card .quantity-input-container, .carousel-product-card .quantity-input-container {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .product-card .quantity-input-container input, .carousel-product-card .quantity-input-container input {
+            width: 60px; /* Smaller quantity input */
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem; /* text-sm */
+        }
+    </style>
+</head>
+<body class="scroll-smooth">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase variables
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let isAdmin = false; // Flag to determine if the current user is an admin
+        let isAuthReady = false; // Flag to indicate if auth is ready
+        let allProducts = []; // Store all products for filtering
+        let allCategories = []; // Store all categories
+        let appId; // Declare appId in global scope
+
+        // Admin password (hardcoded for direct access)
+        const ADMIN_PASSWORD = '1543zs03';
+
+        // Current page state for SPA feel
+        let currentPage = 'shop'; // 'shop', 'admin', 'edit'
+        let activeCategoryFilter = 'All Products'; // Default filter
+
+        // Carousel variables
+        let carouselInterval;
+        const CAROUSEL_SCROLL_INTERVAL = 3000; // 3 seconds
+        const CAROUSEL_SCROLL_AMOUNT = 196; // Width of carousel card (180px) + margin-right (0.75rem = 12px) + some buffer
+
+        // Initialize Firebase when the window loads
+        window.onload = async function() {
+            try {
+                // Use Canvas environment variables if available
+                const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                    apiKey: "AIzaSyA_0KfaFfF0A5qeAL-yFC5keyWJFvW6UNs",
+                    authDomain: "flourish-boutique.firebaseapp.com",
+                    projectId: "flourish-boutique",
+                    storageBucket: "flourish-boutique.firebasestorage.app",
+                    messagingSenderId: "34816935044",
+                    appId: "1:34816935044:web:d529f7e13d5fdbd08caed1",
+                    measurementId: "G-D4EZM4MHF7"
+                };
+
+                appId = typeof __app_id !== 'undefined' ? __app_id : firebaseConfig.appId; // Prioritize __app_id
+
+                // A more robust check to ensure the config is not empty or still using default placeholders
+                if (!firebaseConfig.projectId || !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY")) {
+                    console.error("Firebase config is incomplete or still contains placeholder values. Please update it.");
+                    showModal('messageModal', 'Firebase configuration is not fully set up. Please ensure all values are correct in your HTML file.', 'text-red-600');
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Display initial auth status message
+                updateAuthStatusMessage('Initializing authentication...');
+
+                // Authenticate user (for general data access, not admin login)
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Authenticated user ID:", userId);
+                        updateAuthStatusMessage(`Authenticated: ${userId.substring(0, 8)}...`);
+                    } else {
+                        try {
+                            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in with custom token. User ID:", userId);
+                                updateAuthStatusMessage(`Authenticated: ${userId.substring(0, 8)}...`);
+                            } else {
+                                await signInAnonymously(auth);
+                                userId = auth.currentUser.uid;
+                                console.log("Signed in anonymously. User ID:", userId);
+                                updateAuthStatusMessage(`Authenticated: ${userId.substring(0, 8)}... (Anonymous)`);
+                            }
+                        } catch (error) {
+                            console.error("Error during anonymous sign-in or custom token sign-in:", error);
+                            userId = crypto.randomUUID(); // Fallback to a random ID if auth fails
+                            console.log("Using random user ID as fallback:", userId);
+                            updateAuthStatusMessage('Authentication failed. Data access might be limited.', 'text-red-600');
+                        }
+                    }
+                    isAuthReady = true; // Set auth ready flag
+                    // Now that auth is ready, initialize Firestore listeners
+                    initializeFirestoreListeners(); // No need to pass appId, it's global
+                    renderPage(currentPage); // Render initial page after auth is ready
+                });
+
+                // Add event listeners for carousel auto-swipe pause/resume
+                const carousel = document.getElementById('product-carousel');
+                if (carousel) {
+                    carousel.addEventListener('mouseover', stopAutoSwipe);
+                    carousel.addEventListener('mouseout', startAutoSwipe);
+                    carousel.addEventListener('touchstart', stopAutoSwipe); // For touch devices
+                    carousel.addEventListener('touchend', startAutoSwipe); // For touch devices
+                }
+
+            } catch (error) {
+                console.error("Failed to initialize Firebase:", error);
+                showModal('messageModal', 'Failed to initialize the application. Please try again later. Check your browser console for errors.', 'text-red-600');
+                updateAuthStatusMessage('Firebase initialization failed!', 'text-red-600');
+            }
+        };
+
+        // Function to update the auth status message in the UI
+        function updateAuthStatusMessage(message, colorClass = 'text-gray-600') {
+            const statusElement = document.getElementById('auth-status-message');
+            if (statusElement) {
+                statusElement.textContent = message;
+                statusElement.className = `text-center text-sm mt-2 ${colorClass}`;
+            }
+        }
+
+
+        // --- Dynamic Header Scroll Logic ---
+        let lastScrollY = 0;
+        const header = document.querySelector('.header-theme');
+        const headerHeight = 80; // Fixed height of the header
+        const scrollHideThreshold = 100; // Scroll 100px down before hiding
+
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+
+            // Only apply dynamic hide/show if on the 'shop' page
+            if (currentPage === 'shop') {
+                if (currentScrollY > lastScrollY && currentScrollY > scrollHideThreshold) {
+                    // Scrolling Down and past the threshold
+                    header.classList.add('header-hidden');
+                } else if (currentScrollY < lastScrollY || currentScrollY <= 0) {
+                    // Scrolling Up or at the very top of the page
+                    header.classList.remove('header-hidden');
+                }
+            } else {
+                // Always show header in admin/edit mode
+                header.classList.remove('header-hidden');
+            }
+
+            lastScrollY = currentScrollY;
+        });
+
+
+        // Function to initialize Firestore listeners after auth is ready
+        function initializeFirestoreListeners() { // appId is now global
+            if (!db) {
+                console.error("Firestore DB is not initialized. Cannot set up listeners.");
+                showModal('messageModal', 'Database not ready. Please refresh the page.', 'text-red-600');
+                return;
+            }
+            // Ensure authentication is ready before setting up listeners
+            if (!isAuthReady || !auth.currentUser) {
+                console.warn("Authentication not ready or user is null. Delaying listener setup.");
+                // We will re-attempt to set up listeners once onAuthStateChanged confirms a user.
+                return;
+            }
+
+            // Log the appId being used for debugging
+            console.log("AppId being used by Firestore listeners:", appId);
+            updateAuthStatusMessage(`App ID: ${appId.substring(0, 8)}... (Auth: ${userId ? userId.substring(0,8) + '...' : 'N/A'})`, 'text-blue-600'); // Display AppId and User ID for verification
+
+
+            // Listen for real-time updates to products
+            const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`);
+            onSnapshot(productsCollectionRef, (snapshot) => {
+                allProducts = []; // Clear previous products
+                snapshot.forEach(doc => {
+                    allProducts.push({ id: doc.id, ...doc.data() });
+                });
+                console.log("Products updated by onSnapshot:", allProducts); // For debugging
+                filterProducts(); // Display all products initially, or apply current filter
+                renderCarouselProducts(allProducts); // Render products in the carousel
+                displayEditableProducts(allProducts);
+            }, (error) => {
+                console.error("Error fetching products:", error);
+                showModal('messageModal', `Error loading products: ${error.message}. Please refresh the page.`, 'text-red-600');
+            });
+
+            // Listen for real-time updates to orders (for admin panel)
+            const ordersCollectionRef = collection(db, `artifacts/${appId}/public/data/orders`);
+            onSnapshot(ordersCollectionRef, (snapshot) => {
+                const orders = [];
+                snapshot.forEach(doc => {
+                    orders.push({ id: doc.id, ...doc.data() });
+                });
+                displayOrders(orders);
+                updateAdminDashboardStats(allProducts.length, orders.length);
+            }, (error) => {
+                console.error("Error fetching orders:", error);
+                showModal('messageModal', `Error loading orders for admin: ${error.message}. Please refresh.`, 'text-red-600');
+            });
+
+            // Listen for real-time updates to categories
+            const categoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/categories`);
+            onSnapshot(categoriesCollectionRef, (snapshot) => {
+                allCategories = [];
+                snapshot.forEach(doc => {
+                    allCategories.push({ id: doc.id, ...doc.data() });
+                });
+                renderCategoryMenu(); // Update hamburger menu
+                displayCategoriesForManagement(); // Update admin category list
+                populateCategoryDropdowns(); // Update product forms
+            }, (error) => {
+                console.error("Error fetching categories:", error);
+                showModal('messageModal', `Error loading categories: ${error.message}. Please refresh the page.`, 'text-red-600');
+            });
+        }
+
+        // --- SPA Routing Logic ---
+        window.renderPage = function(pageName) {
+            currentPage = pageName;
+            document.getElementById('hero-section').classList.add('hidden');
+            document.getElementById('carousel-section').classList.add('hidden'); // Hide carousel section
+            document.getElementById('products-section').classList.add('hidden');
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('edit-mode-panel').classList.add('hidden');
+
+            // Ensure header is visible when changing pages, especially to admin/edit
+            header.classList.remove('header-hidden');
+
+            // Hide/show hamburger and shop now button based on page
+            document.getElementById('hamburger-icon').classList.toggle('hidden', pageName !== 'shop');
+            document.getElementById('shop-now-btn').classList.toggle('hidden', pageName !== 'shop');
+
+            // Show/hide logout button based on isAdmin state
+            document.getElementById('admin-logout-btn-container').classList.toggle('hidden', !isAdmin);
+
+
+            if (pageName === 'shop') {
+                document.getElementById('hero-section').classList.remove('hidden');
+                document.getElementById('carousel-section').classList.remove('hidden'); // Show carousel section
+                document.getElementById('products-section').classList.remove('hidden');
+                document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });
+                startAutoSwipe(); // Start auto-swipe when on shop page
+            } else if (pageName === 'admin') {
+                stopAutoSwipe(); // Stop auto-swipe when not on shop page
+                // Only allow access if isAdmin is true
+                if (!isAdmin) {
+                    showModal('messageModal', 'Access Denied. Please log in as Admin.', 'text-red-600');
+                    renderPage('shop'); // Redirect back to shop if not admin
+                    return;
+                }
+                document.getElementById('admin-panel').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (pageName === 'edit') {
+                stopAutoSwipe(); // Stop auto-swipe when not on shop page
+                // Only allow access if isAdmin is true
+                if (!isAdmin) {
+                    showModal('messageModal', 'Access Denied. Please log in as Admin.', 'text-red-600');
+                    renderPage('shop'); // Redirect back to shop if not admin
+                    return;
+                }
+                document.getElementById('edit-mode-panel').classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            hideHamburgerMenu(); // Close menu on page change
+        };
+
+        // --- Product Display and Filtering ---
+        window.filterProducts = function(category = activeCategoryFilter) {
+            activeCategoryFilter = category; // Set the active filter
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+            let filtered = allProducts;
+
+            // Apply category filter first
+            if (activeCategoryFilter !== 'All Products') {
+                filtered = filtered.filter(product => product.category === activeCategoryFilter);
+            }
+
+            // Then apply search term filter
+            if (searchTerm) {
+                filtered = filtered.filter(product =>
+                    product.name.toLowerCase().includes(searchTerm) ||
+                    product.description.toLowerCase().includes(searchTerm)
+                );
+            }
+            console.log("Filtering products. Displaying:", filtered); // For debugging
+            displayProducts(filtered);
+        };
+
+        function getStarRatingHtml(rating) {
+            const fullStars = Math.floor(rating);
+            const halfStar = rating % 1 >= 0.5 ? 1 : 0;
+            const emptyStars = 5 - fullStars - halfStar;
+            let starsHtml = '';
+            for (let i = 0; i < fullStars; i++) {
+                starsHtml += '<i class="fas fa-star"></i>';
+            }
+            if (halfStar) {
+                starsHtml += '<i class="fas fa-star-half-alt"></i>';
+            }
+            for (let i = 0; i < emptyStars; i++) {
+                starsHtml += '<i class="far fa-star"></i>'; // far for empty star
+            }
+            return starsHtml;
+        }
+
+        function displayProducts(products) {
+            const productsGrid = document.getElementById('products-grid');
+            if (!productsGrid) return;
+            productsGrid.innerHTML = ''; // Clear existing products
+
+            if (products.length === 0) {
+                productsGrid.innerHTML = '<p class="text-center text-gray-600 col-span-full text-xl mt-8">No products found matching your criteria.</p>';
+                return;
+            }
+
+            products.forEach((product, index) => {
+                const displayCategory = product.category && product.category !== '' ? product.category : 'N/A';
+                const isOutOfStock = product.stock === 0;
+                const orderButtonClass = isOutOfStock ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-primary';
+                const orderButtonText = isOutOfStock ? 'Out of Stock' : 'Add to Cart';
+                const orderButtonDisabled = isOutOfStock ? 'disabled' : '';
+
+                // Calculate discounted price and savings
+                const originalPrice = parseFloat(product.originalPrice || product.price || 0); // Use originalPrice if available, else current price, default to 0
+                const discountPercentage = parseFloat(product.discountPercentage || 0);
+                const currentPrice = originalPrice * (1 - discountPercentage / 100);
+
+                const soldCount = product.soldCount !== undefined ? product.soldCount : 0;
+                const rating = product.rating !== undefined ? product.rating : 0;
+
+                const productCard = `
+                    <div class="product-card flex flex-col" style="animation-delay: ${index * 0.05}s;">
+                        <div class="cursor-pointer flex-grow flex flex-col" onclick="showProductDetail('${product.id}')">
+                            <div class="product-image-container">
+                                <img src="${product.imageUrl || 'https://placehold.co/200x200/FF8C00/FFFFFF?text=Product'}" alt="${product.name}">
+                                ${discountPercentage > 0 ? `<div class="discount-tag">-${discountPercentage}%</div>` : ''}
+                            </div>
+                            <h3 class="text-base font-semibold text-gray-800 mb-1 leading-tight">${product.name}</h3>
+                            <p class="text-gray-600 text-sm mb-2 leading-tight">${product.description}</p>
+                            <div class="flex items-baseline mb-1">
+                                ${discountPercentage > 0 ? `<span class="original-price">MUR ${originalPrice.toFixed(2)}</span>` : ''}
+                                <span class="current-price">MUR ${currentPrice.toFixed(2)}</span>
+                            </div>
+                            ${discountPercentage > 0 ? `<p class="savings-text">Savings -${discountPercentage}% Now</p>` : ''}
+                            <div class="sold-rating">
+                                <span>${soldCount}+ sold</span>
+                                <span class="ml-2">${getStarRatingHtml(rating)} ${rating.toFixed(1)}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Stock: ${product.stock}</p>
+                        </div>
+                        <!-- Quantity Input -->
+                        <div class="quantity-input-container flex items-center justify-center mt-3 mb-4">
+                            <label for="quantity-${product.id}" class="sr-only">Quantity</label>
+                            <input type="number" id="quantity-${product.id}" value="1" min="1" max="${product.stock}"
+                                class="w-24 p-2 border border-gray-300 rounded-md text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                onchange="if(this.value < 1) this.value = 1; if(this.value > ${product.stock}) this.value = ${product.stock};"
+                                ${isOutOfStock ? 'disabled' : ''}>
+                        </div>
+                        <button class="${orderButtonClass} w-full text-base py-2" ${orderButtonDisabled} onclick="showOrderFormFromDetail('${product.id}', '${product.name}', '${currentPrice.toFixed(2)}', ${product.stock}, document.getElementById('quantity-${product.id}').value)">
+                            ${orderButtonText}
+                        </button>
+                    </div>
+                `;
+                productsGrid.innerHTML += productCard;
+            });
+        }
+
+        // --- Carousel Product Rendering ---
+        function renderCarouselProducts(products) {
+            const carouselContainer = document.getElementById('product-carousel');
+            if (!carouselContainer) return;
+            carouselContainer.innerHTML = ''; // Clear existing products
+
+            // Take a subset of products for the carousel, or all if less than 10
+            const productsForCarousel = products.slice(0, Math.min(products.length, 10));
+
+            if (productsForCarousel.length === 0) {
+                carouselContainer.innerHTML = '<p class="text-center text-gray-600 text-xl mt-8 w-full">No trending products available.</p>';
+                return;
+            }
+
+            productsForCarousel.forEach((product, index) => {
+                const displayCategory = product.category && product.category !== '' ? product.category : 'N/A';
+                const isOutOfStock = product.stock === 0;
+                const orderButtonClass = isOutOfStock ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-primary';
+                const orderButtonText = isOutOfStock ? 'Out of Stock' : 'Add to Cart';
+                const orderButtonDisabled = isOutOfStock ? 'disabled' : '';
+
+                // Calculate discounted price and savings
+                const originalPrice = parseFloat(product.originalPrice || product.price || 0); // Use originalPrice if available, else current price, default to 0
+                const discountPercentage = parseFloat(product.discountPercentage || 0);
+                const currentPrice = originalPrice * (1 - discountPercentage / 100);
+
+                const soldCount = product.soldCount !== undefined ? product.soldCount : 0;
+                const rating = product.rating !== undefined ? product.rating : 0;
+
+                const productCard = `
+                    <div class="carousel-product-card flex flex-col" style="animation-delay: ${index * 0.05}s;">
+                        <div class="cursor-pointer flex-grow flex flex-col" onclick="showProductDetail('${product.id}')">
+                            <div class="product-image-container">
+                                <img src="${product.imageUrl || 'https://placehold.co/180x180/FF8C00/FFFFFF?text=Product'}" alt="${product.name}">
+                                ${discountPercentage > 0 ? `<div class="discount-tag">-${discountPercentage}%</div>` : ''}
+                            </div>
+                            <h3 class="text-base font-semibold text-gray-800 mb-1 leading-tight">${product.name}</h3>
+                            <p class="text-gray-600 text-sm mb-2 leading-tight">${product.description}</p>
+                            <div class="flex items-baseline mb-1">
+                                ${discountPercentage > 0 ? `<span class="original-price">MUR ${originalPrice.toFixed(2)}</span>` : ''}
+                                <span class="current-price">MUR ${currentPrice.toFixed(2)}</span>
+                            </div>
+                            ${discountPercentage > 0 ? `<p class="savings-text">Savings -${discountPercentage}% Now</p>` : ''}
+                            <div class="sold-rating">
+                                <span>${soldCount}+ sold</span>
+                                <span class="ml-2">${getStarRatingHtml(rating)} ${rating.toFixed(1)}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Stock: ${product.stock}</p>
+                        </div>
+                        <div class="quantity-input-container flex items-center justify-center mt-3 mb-4">
+                            <label for="carousel-quantity-${product.id}" class="sr-only">Quantity</label>
+                            <input type="number" id="carousel-quantity-${product.id}" value="1" min="1" max="${product.stock}"
+                                class="w-24 p-2 border border-gray-300 rounded-md text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                onchange="if(this.value < 1) this.value = 1; if(this.value > ${product.stock}) this.value = ${product.stock};"
+                                ${isOutOfStock ? 'disabled' : ''}>
+                        </div>
+                        <button class="${orderButtonClass} w-full text-base py-2" ${orderButtonDisabled} onclick="showOrderFormFromDetail('${product.id}', '${product.name}', '${currentPrice.toFixed(2)}', ${product.stock}, document.getElementById('carousel-quantity-${product.id}').value)">
+                            ${orderButtonText}
+                        </button>
+                    </div>
+                `;
+                carouselContainer.innerHTML += productCard;
+            });
+
+            // If there are products, start the auto-swipe
+            if (productsForCarousel.length > 0 && currentPage === 'shop') {
+                startAutoSwipe();
+            }
+        }
+
+        // --- Carousel Auto-Swipe Logic ---
+        function startAutoSwipe() {
+            stopAutoSwipe(); // Clear any existing interval first
+            const carousel = document.getElementById('product-carousel');
+            if (!carousel) return;
+
+            carouselInterval = setInterval(() => {
+                // Check if we are at the end of the scrollable area
+                if (carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth) {
+                    carousel.scrollTo({ left: 0, behavior: 'smooth' }); // Loop back to start
+                } else {
+                    carousel.scrollBy({ left: CAROUSEL_SCROLL_AMOUNT, behavior: 'smooth' }); // Scroll by one card width
+                }
+            }, CAROUSEL_SCROLL_INTERVAL);
+        }
+
+        function stopAutoSwipe() {
+            if (carouselInterval) {
+                clearInterval(carouselInterval);
+                carouselInterval = null;
+            }
+        }
+
+        // --- Image Enlargement Logic ---
+        window.showEnlargedImage = function(imageUrl) {
+            console.log("showEnlargedImage called with URL:", imageUrl); // Debug log
+            const enlargedImage = document.getElementById('enlarged-image');
+            if (enlargedImage) {
+                console.log("Found enlarged-image element."); // Debug log
+                enlargedImage.src = imageUrl;
+                // Add an onerror handler for the enlarged image itself
+                enlargedImage.onerror = () => {
+                    console.error("Failed to load enlarged image:", imageUrl);
+                    enlargedImage.src = 'https://placehold.co/800x800/FF0000/FFFFFF?text=Image+Load+Error'; // Fallback for loading error
+                    showModal('messageModal', 'Failed to load product image. Please try again.', 'text-red-600');
+                };
+                showModal('imageEnlargeModal');
+            } else {
+                console.error("Could not find 'enlarged-image' element in the DOM."); // Debug log
+                showModal('messageModal', 'Error: Image display component not found.', 'text-red-600');
+            }
+        };
+
+        async function showProductDetail(productId) {
+            const product = allProducts.find(p => p.id === productId);
+            if (!product) {
+                showModal('messageModal', 'Product not found.', 'text-red-600');
+                return;
+            }
+
+            // Determine stock status message and color
+            let stockStatusText = '';
+            let stockStatusColor = '';
+            if (product.stock === 0) {
+                stockStatusText = 'Out of Stock';
+                stockStatusColor = 'text-red-600';
+            } else if (product.stock > 0 && product.stock <= 5) {
+                stockStatusText = `Only ${product.stock} left!`;
+                stockStatusColor = 'text-yellow-600';
+            } else {
+                stockStatusText = `In Stock (${product.stock})`;
+                stockStatusColor = 'text-green-600';
+            }
+
+            const displayCategory = product.category && product.category !== '' ? product.category : 'N/A';
+
+            document.getElementById('detail-product-id').value = product.id;
+            document.getElementById('detail-product-name').textContent = product.name;
+            // Calculate and display prices in detail modal
+            const originalPrice = parseFloat(product.originalPrice || product.price || 0);
+            const discountPercentage = parseFloat(product.discountPercentage || 0);
+            const currentPrice = originalPrice * (1 - discountPercentage / 100);
+
+            let priceHtml = `<span class="text-4xl font-bold text-orange-700">MUR ${currentPrice.toFixed(2)}</span>`;
+            if (discountPercentage > 0) {
+                priceHtml = `<span class="text-2xl original-price">MUR ${originalPrice.toFixed(2)}</span> ${priceHtml}`;
+                document.getElementById('detail-product-savings').textContent = `Savings -${discountPercentage}% Now`;
+                document.getElementById('detail-product-savings').classList.remove('hidden');
+            } else {
+                document.getElementById('detail-product-savings').classList.add('hidden');
+            }
+            document.getElementById('detail-product-price').innerHTML = priceHtml;
+
+
+            document.getElementById('detail-product-description').textContent = product.description;
+            // Set the image source and add the onclick event for enlargement
+            const detailProductImage = document.getElementById('detail-product-image');
+            detailProductImage.src = product.imageUrl || 'https://placehold.co/400x400/FF8C00/FFFFFF?text=Product'; // Updated placeholder for 1:1 aspect
+            detailProductImage.onclick = () => showEnlargedImage(detailProductImage.src);
+
+            document.getElementById('detail-product-category').textContent = displayCategory;
+            document.getElementById('detail-product-stock').textContent = stockStatusText;
+            document.getElementById('detail-product-stock').className = `font-semibold ${stockStatusColor} text-base mb-4`; // Apply color class
+
+            // Set up quantity input in detail modal
+            const detailQuantityInput = document.getElementById('detail-quantity-input');
+            detailQuantityInput.value = 1; // Default to 1
+            detailQuantityInput.min = 1;
+            detailQuantityInput.max = product.stock;
+            detailQuantityInput.disabled = product.stock === 0;
+            detailQuantityInput.onchange = () => {
+                if (detailQuantityInput.value < 1) detailQuantityInput.value = 1;
+                if (detailQuantityInput.value > product.stock) detailQuantityInput.value = product.stock;
+            };
+
+            // Update the "Add to Order" button in the detail modal
+            const detailOrderButton = document.getElementById('detail-modal-order-button');
+            if (product.stock === 0) {
+                detailOrderButton.textContent = 'Out of Stock';
+                detailOrderButton.classList.add('opacity-50', 'cursor-not-allowed');
+                detailOrderButton.disabled = true;
+            } else {
+                detailOrderButton.textContent = 'Add to Cart'; // Changed text to "Add to Cart"
+                detailOrderButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                detailOrderButton.disabled = false;
+            }
+            detailOrderButton.onclick = () => showOrderFormFromDetail(product.id, product.name, currentPrice.toFixed(2), product.stock, detailQuantityInput.value);
+
+
+            showModal('productDetailModal');
+        }
+
+        async function addProduct(product) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to add product before authentication was ready or user was null.");
+                    return;
+                }
+                showModal('messageModal', 'Adding product...', 'text-blue-600');
+                const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`); // Use global appId
+                await addDoc(productsCollectionRef, product);
+                console.log("Product added successfully to Firestore!");
+                document.getElementById('add-product-form').reset(); // Clear form
+                document.getElementById('add-product-preview').src = 'https://placehold.co/200x200/FF8C00/FFFFFF?text=Upload+Image'; // Reset image preview
+                showModal('messageModal', 'Product added successfully and is now visible in the shop!', 'text-green-600'); // Added confirmation
+            } catch (e) {
+                console.error("Error adding product to Firestore: ", e);
+                showModal('messageModal', `Error adding product: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+            }
+        }
+
+        async function updateProduct(productId, updates) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to update product before authentication was ready or user was null.");
+                    return;
+                }
+                showModal('messageModal', 'Saving changes...', 'text-blue-600');
+                const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use global appId
+                await updateDoc(productDocRef, updates);
+                console.log("Product updated successfully in Firestore!");
+                showModal('messageModal', 'Product updated successfully and changes are live in the shop!', 'text-green-600'); // Added confirmation
+            } catch (e) {
+                console.error("Error updating product in Firestore: ", e);
+                showModal('messageModal', `Error updating product: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+            }
+        }
+
+        window.deleteProduct = async function(productId) {
+            // Find the product card element to remove it immediately for instant visual feedback
+            const productCardToRemove = document.querySelector(`#product-card-${productId}`);
+
+            showConfirmationModal('Are you sure you want to delete this product? This action cannot be undone.', async () => {
+                // User confirmed
+                if (productCardToRemove) {
+                    productCardToRemove.remove(); // Remove from DOM immediately
+                }
+                try {
+                    if (!db) { console.error("Firestore not initialized."); return; }
+                    if (!isAuthReady || !auth.currentUser) {
+                        showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                        console.error("Attempted to delete product before authentication was ready or user was null.");
+                        return;
+                    }
+                    showModal('messageModal', 'Deleting product...', 'text-blue-600');
+                    const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use global appId
+                    await deleteDoc(productDocRef);
+                    console.log("Product deleted successfully from Firestore!");
+                    showModal('messageModal', 'Product deleted successfully!', 'text-green-600');
+                } catch (e) {
+                    console.error("Error deleting product from Firestore: ", e);
+                    showModal('messageModal', `Error deleting product: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+                    // If deletion fails, the onSnapshot listener will eventually re-add the card
+                }
+            });
+        }
+
+        // --- Order Management Functions ---
+        window.showOrderFormFromDetail = function(productId, productName, productPrice, productStock, quantity) {
+            // Validate quantity against stock before opening order form
+            const selectedQuantity = parseInt(quantity);
+            if (isNaN(selectedQuantity) || selectedQuantity < 1) {
+                showModal('messageModal', 'Please enter a valid quantity (at least 1).', 'text-red-600');
+                return;
+            }
+            if (selectedQuantity > productStock) {
+                showModal('messageModal', `You can only order up to ${productStock} of this item.`, 'text-red-600');
+                return;
+            }
+            if (productStock === 0) {
+                showModal('messageModal', 'This product is currently out of stock and cannot be ordered.', 'text-red-600');
+                return;
+            }
+
+            document.getElementById('order-product-id').value = productId;
+            document.getElementById('order-product-name').value = productName;
+            document.getElementById('order-product-price').value = productPrice;
+            document.getElementById('order-quantity').value = selectedQuantity; // Set the quantity in the order modal
+            document.getElementById('order-total-price').textContent = `Total: MUR ${(parseFloat(productPrice) * selectedQuantity).toFixed(2)}`; // Calculate and display total price
+
+            hideModal('productDetailModal'); // Hide product detail modal if it's open
+            showModal('orderModal');
+        };
+
+        async function submitOrder(orderData) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to submit order before authentication was ready or user was null.");
+                    return;
+                }
+
+                const productId = orderData.productId;
+                const quantity = parseInt(orderData.quantity); // Get quantity from orderData
+                const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId); // Use global appId
+
+                showModal('messageModal', 'Processing your order...', 'text-blue-600');
+
+                await runTransaction(db, async (transaction) => {
+                    const productDoc = await transaction.get(productDocRef);
+
+                    if (!productDoc.exists()) {
+                        throw new Error("Product does not exist!");
+                    }
+
+                    const currentStock = productDoc.data().stock;
+
+                    if (currentStock < quantity) { // Check if enough stock for the requested quantity
+                        throw new Error("Not enough stock for the requested quantity!");
+                    }
+
+                    // Decrement stock by the ordered quantity
+                    transaction.update(productDocRef, { stock: currentStock - quantity });
+
+                    // Add the order
+                    const ordersCollectionRef = collection(db, `artifacts/${appId}/public/data/orders`); // Use global appId
+                    transaction.set(doc(ordersCollectionRef), { ...orderData, orderDate: new Date().toISOString() });
+                });
+
+                console.log("Order submitted and stock updated successfully!");
+                document.getElementById('order-form').reset(); // Clear form
+                document.getElementById('payment-details').innerHTML = ''; // Clear payment details
+                document.getElementById('cash-in-hand-address').classList.add('hidden'); // Hide address field
+                hideModal('orderModal');
+                showThankYouMessage();
+            }
+            catch (e) {
+                console.error("Error submitting order: ", e);
+                let errorMessage = 'Error submitting order. Please try again.';
+                if (e.message.includes("Not enough stock")) {
+                    errorMessage = "Not enough stock for your requested quantity. Please reduce the quantity or choose another item.";
+                } else if (e.message.includes("out of stock")) {
+                    errorMessage = "This product is now out of stock. Please choose another item.";
+                } else if (e.message.includes("does not exist")) {
+                    errorMessage = "The product you tried to order no longer exists.";
+                } else if (e.message.includes("permission-denied")) { // Specific Firebase error for permission
+                    errorMessage = "Permission denied to submit order. Please check your internet connection or try again later.";
+                }
+                showModal('messageModal', errorMessage, 'text-red-600');
+            }
+        }
+
+        window.deleteOrder = async function(orderId) { // Made it a window function
+            showConfirmationModal('Are you sure you want to delete this order? This action cannot be undone.', async () => {
+                try {
+                    if (!db) { console.error("Firestore not initialized."); return; }
+                    if (!isAuthReady || !auth.currentUser) {
+                        showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                        console.error("Attempted to delete order before authentication was ready or user was null.");
+                        return;
+                    }
+                    showModal('messageModal', 'Deleting order...', 'text-blue-600');
+                    const orderDocRef = doc(db, `artifacts/${appId}/public/data/orders`, orderId); // Use global appId
+                    await deleteDoc(orderDocRef);
+                    console.log("Order deleted successfully from Firestore!");
+                    showModal('messageModal', 'Order deleted successfully!', 'text-green-600');
+                } catch (e) {
+                    console.error("Error deleting order from Firestore: ", e);
+                    showModal('messageModal', `Error deleting order: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+                }
+            });
+        }
+
+        function displayOrders(orders) {
+            const ordersList = document.getElementById('admin-orders-list');
+            if (!ordersList) return;
+            ordersList.innerHTML = ''; // Clear existing orders
+
+            if (orders.length === 0) {
+                ordersList.innerHTML = '<p class="text-center text-gray-600 text-xl mt-8">No customer orders yet.</p>';
+                return;
+            }
+
+            // Sort orders by date, newest first
+            orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
+            orders.forEach(order => {
+                const orderItem = `
+                    <div class="bg-white p-5 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-200">
+                        <div class="flex-grow">
+                            <p class="font-bold text-lg text-gray-800 mb-1">${order.fullName}</p>
+                            <p class="text-gray-700 text-sm">Contact: <span class="font-medium">${order.contactNumber}</span></p>
+                            <p class="text-gray-700 text-sm">Email: <span class="font-medium">${order.emailAddress || 'N/A'}</span></p>
+                            <p class="text-gray-700 mt-2">Product: <span class="font-semibold">${order.productName}</span> (Qty: ${order.quantity || 1}) (MUR ${order.productPrice})</p> <!-- Display Quantity -->
+                            <p class="text-gray-700 text-sm">Payment Method: <span class="font-medium">${order.paymentMethod === 'juice' ? 'Juice by MCB' : 'Cash in Hand'}</span></p>
+                            ${order.deliveryAddress && order.deliveryAddress !== 'N/A' ? `<p class="text-gray-700 text-sm">Delivery Address: <span class="font-medium">${order.deliveryAddress}</span></p>` : ''}
+                            <p class="text-xs text-gray-500 mt-2">Order ID: <span class="font-mono">${order.id}</span></p>
+                            <p class="text-xs text-gray-500">Ordered On: ${new Date(order.orderDate).toLocaleString()}</p>
+                        </div>
+                        <button class="btn-primary bg-red-600 hover:bg-red-700 mt-6 md:mt-0 md:ml-6 text-sm" onclick="deleteOrder('${order.id}')">Delete Order</button>
+                    </div>
+                `;
+                ordersList.innerHTML += orderItem;
+            });
+        }
+
+        function updateAdminDashboardStats(productCount, orderCount) {
+            const productCountElem = document.getElementById('admin-product-count');
+            const orderCountElem = document.getElementById('admin-order-count');
+            if (productCountElem) productCountElem.textContent = productCount;
+            if (orderCountElem) orderCountElem.textContent = orderCount;
+        }
+
+        // --- Admin Edit Mode Product Display ---
+        function displayEditableProducts(products) {
+            const editableProductsGrid = document.getElementById('editable-products-grid');
+            if (!editableProductsGrid) return;
+            editableProductsGrid.innerHTML = ''; // Clear existing products
+
+            if (products.length === 0) {
+                editableProductsGrid.innerHTML = '<p class="text-center text-gray-600 col-span-full text-xl mt-8">No products to edit. Add new ones!</p>';
+                return;
+            }
+
+            products.forEach(product => {
+                const displayCategory = product.category && product.category !== '' ? product.category : 'N/A';
+                const editableProductCard = `
+                    <div class="product-card flex flex-col p-4" id="product-card-${product.id}"> <!-- Added ID for easy removal -->
+                        <!-- Image Upload/Preview - Note: This is client-side preview only. Actual file storage would require a backend. -->
+                        <label for="edit-image-${product.id}" class="cursor-pointer mb-3 flex justify-center items-center h-40 w-full border border-dashed border-gray-300 rounded-md overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                            <img id="edit-preview-${product.id}" src="${product.imageUrl || 'https://placehold.co/200x200/FF8C00/FFFFFF?text=Upload+Image'}" alt="Product Image" class="w-full h-full object-cover">
+                            <input type="file" id="edit-image-${product.id}" class="hidden" accept="image/*" onchange="previewEditImage(event, '${product.id}')">
+                        </label>
+                        <label for="edit-name-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Product Name:</label>
+                        <input type="text" id="edit-name-${product.id}" value="${product.name}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500">
+
+                        <label for="edit-description-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Description:</label>
+                        <textarea id="edit-description-${product.id}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 h-24 resize-y focus:outline-none focus:ring-2 focus:ring-orange-500">${product.description}</textarea>
+
+                        <label for="edit-original-price-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Original Price (MUR):</label>
+                        <input type="number" id="edit-original-price-${product.id}" value="${parseFloat(product.originalPrice || product.price || 0).toFixed(2)}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-orange-500" step="0.01">
+
+                        <label for="edit-discount-percentage-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Discount % (0-100):</label>
+                        <input type="number" id="edit-discount-percentage-${product.id}" value="${product.discountPercentage !== undefined ? product.discountPercentage : 0}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" max="100" step="1">
+
+                        <label for="edit-stock-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Stock Quantity:</label>
+                        <input type="number" id="edit-stock-${product.id}" value="${product.stock !== undefined ? product.stock : 1}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" step="1">
+
+                        <label for="edit-sold-count-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Sold Count:</label>
+                        <input type="number" id="edit-sold-count-${product.id}" value="${product.soldCount !== undefined ? product.soldCount : 0}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" step="1">
+
+                        <label for="edit-rating-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Rating (0-5):</label>
+                        <input type="number" id="edit-rating-${product.id}" value="${product.rating !== undefined ? product.rating : 0}" class="w-full p-2 border border-gray-300 rounded-sm mb-2 text-base font-bold focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" max="5" step="0.1">
+
+                        <label for="edit-category-${product.id}" class="block text-gray-700 text-sm font-bold mb-1">Category:</label>
+                        <select id="edit-category-${product.id}" class="w-full p-2 border border-gray-300 rounded-sm mb-4 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                            <!-- Categories will be populated here by JavaScript -->
+                        </select>
+
+                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                            <button class="btn-primary flex-1 text-sm" onclick="saveEditedProduct('${product.id}')">Save Changes</button>
+                            <button class="btn-primary bg-red-600 hover:bg-red-700 flex-1 text-sm" onclick="deleteProduct('${product.id}')">Remove Product</button>
+                        </div>
+                    </div>
+                `;
+                editableProductsGrid.innerHTML += editableProductCard;
+                // Set the product's category after the card is added to DOM
+                document.getElementById(`edit-category-${product.id}`).value = product.category || '';
+            });
+            populateCategoryDropdowns(); // Ensure dropdowns are populated after product cards are rendered
+        }
+
+        // Function to save edited product
+        window.saveEditedProduct = async function(productId) {
+            console.log("saveEditedProduct function called for product ID:", productId); // Debug log
+            const nameInput = document.getElementById(`edit-name-${productId}`);
+            const descriptionInput = document.getElementById(`edit-description-${productId}`);
+            const originalPriceInput = document.getElementById(`edit-original-price-${productId}`);
+            const discountPercentageInput = document.getElementById(`edit-discount-percentage-${productId}`);
+            const stockInput = document.getElementById(`edit-stock-${productId}`);
+            const soldCountInput = document.getElementById(`edit-sold-count-${productId}`);
+            const ratingInput = document.getElementById(`edit-rating-${productId}`);
+            const imageUrlInput = document.getElementById(`edit-preview-${productId}`);
+            const categorySelect = document.getElementById(`edit-category-${productId}`);
+
+            const name = nameInput.value.trim();
+            const description = descriptionInput.value.trim();
+            const originalPrice = parseFloat(originalPriceInput.value);
+            const discountPercentage = parseFloat(discountPercentageInput.value);
+            const stock = parseInt(stockInput.value);
+            const soldCount = parseInt(soldCountInput.value);
+            const rating = parseFloat(ratingInput.value);
+            const imageUrl = imageUrlInput.src;
+            const category = categorySelect.value;
+
+            if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
+                showModal('messageModal', 'Please fill all product fields correctly. Ensure prices are positive, discount is between 0-100, stock and sold count are non-negative, and rating is between 0-5.', 'text-red-600');
+                console.error("Validation failed for edited product."); // Debug log
+                return;
+            }
+
+            // Calculate current price based on original price and discount
+            const price = originalPrice * (1 - discountPercentage / 100);
+
+            try {
+                await updateProduct(productId, { name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, imageUrl, category });
+                filterProducts(); // Explicitly refresh the shop page products after saving edits
+            } catch (e) {
+                console.error("Error saving edited product: ", e);
+                showModal('messageModal', 'Error saving product changes. Please try again.', 'text-red-600');
+            }
+        };
+
+        // Function to preview image in edit mode
+        window.previewEditImage = function(event, productId) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                const output = document.getElementById(`edit-preview-${productId}`);
+                output.src = reader.result;
+            };
+            if (event.target.files[0]) {
+                reader.readAsDataURL(event.target.files[0]);
+            }
+        };
+
+        // Function to preview image for new product
+        window.previewNewProductImage = function(event) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                const output = document.getElementById('add-product-preview');
+                output.src = reader.result;
+            };
+            if (event.target.files[0]) {
+                reader.readAsDataURL(event.target.files[0]);
+            }
+        };
+
+        // --- Generic Modal Functions ---
+        window.hideModal = function(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            // Allow time for transition before hiding completely
+            setTimeout(() => {
+                document.getElementById(modalId).classList.add('hidden');
+            }, 300);
+        };
+
+        window.showModal = function(modalId, message = '', messageClass = '') {
+            const modal = document.getElementById(modalId);
+            const messageElement = modal.querySelector('#modal-message');
+            if (messageElement) {
+                messageElement.textContent = message;
+                messageElement.className = `text-center ${messageClass} text-xl font-semibold mb-4`;
+            }
+            modal.classList.remove('hidden');
+            // Allow time for display before showing with transition
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        };
+
+        // --- Custom Confirmation Modal ---
+        let confirmCallback = null;
+        window.showConfirmationModal = function(message, onConfirm) {
+            document.getElementById('confirmation-message').textContent = message;
+            confirmCallback = onConfirm; // Store the callback
+            showModal('confirmationModal');
+        };
+
+        window.handleConfirm = function() {
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            hideModal('confirmationModal');
+            confirmCallback = null; // Reset callback
+        };
+
+        window.handleCancel = function() {
+            hideModal('confirmationModal');
+            confirmCallback = null; // Reset callback
+        };
+
+        window.handlePaymentMethodChange = function() {
+            const paymentMethod = document.getElementById('payment-method').value;
+            const paymentDetailsDiv = document.getElementById('payment-details');
+            const cashInHandAddressDiv = document.getElementById('cash-in-hand-address');
+            const contactNumber = '59134519'; // New contact number
+
+            paymentDetailsDiv.innerHTML = '';
+            cashInHandAddressDiv.classList.add('hidden');
+
+            if (paymentMethod === 'juice') {
+                paymentDetailsDiv.innerHTML = `<p class="text-gray-700 mt-2 text-base">Please transfer the money to <strong class="font-semibold">${contactNumber}</strong> via Juice by MCB.</p>`;
+            } else if (paymentMethod === 'cash') {
+                cashInHandAddressDiv.classList.remove('hidden');
+                paymentDetailsDiv.innerHTML = `<p class="text-gray-700 mt-2 text-base">Please pay delivery fees in advance to <strong class="font-semibold">${contactNumber}</strong> via Juice by MCB. Proper amount must be prepared when meeting. Please send a screenshot of the payment to that number.</p>`;
+            }
+        };
+
+        window.processOrder = async function() {
+            const fullNameInput = document.getElementById('full-name');
+            const contactNumberInput = document.getElementById('contact-number');
+            const emailAddressInput = document.getElementById('email-address');
+            const paymentMethodInput = document.getElementById('payment-method');
+            const deliveryAddressInput = document.getElementById('delivery-address');
+            const orderQuantityInput = document.getElementById('order-quantity'); // Get quantity from order modal
+
+            const productId = document.getElementById('order-product-id').value;
+            const productName = document.getElementById('order-product-name').value;
+            const productPrice = document.getElementById('order-product-price').value;
+            const quantity = parseInt(orderQuantityInput.value); // Parse quantity
+
+            const fullName = fullNameInput.value.trim();
+            const contactNumber = contactNumberInput.value.trim();
+            const emailAddress = emailAddressInput.value.trim();
+            const paymentMethod = paymentMethodInput.value;
+            const deliveryAddress = deliveryAddressInput.value.trim();
+
+            // Basic validation
+            if (!fullName || !contactNumber || !paymentMethod) {
+                showModal('messageModal', 'Please fill in all required fields: Full Name, Contact Number, and Payment Method.', 'text-red-600');
+                return;
+            }
+
+            if (paymentMethod === 'cash' && !deliveryAddress) {
+                showModal('messageModal', 'Please provide your delivery address for Cash in Hand transaction.', 'text-red-600');
+                return;
+            }
+
+            if (isNaN(quantity) || quantity < 1) { // Re-validate quantity here too
+                showModal('messageModal', 'Please enter a valid quantity for your order.', 'text-red-600');
+                return;
+            }
+
+
+            const orderData = {
+                productId, // Store the product ID
+                productName,
+                productPrice,
+                quantity, // Store the ordered quantity
+                fullName,
+                contactNumber,
+                emailAddress: emailAddress || 'N/A', // Store N/A if email is empty
+                paymentMethod,
+                deliveryAddress: paymentMethod === 'cash' ? deliveryAddress : 'N/A' // Store N/A if not cash
+            };
+
+            await submitOrder(orderData);
+        };
+
+        window.showThankYouMessage = function() {
+            const thankYou = document.getElementById('thank-you-message');
+            thankYou.classList.add('show');
+            setTimeout(() => {
+                thankYou.classList.remove('show');
+            }, 2000); // Changed from 20000 to 2000 (2 seconds)
+        };
+
+        // --- Admin Login/Logout Logic (using hardcoded password) ---
+        window.openAdminLoginModal = function() {
+            showModal('adminLoginModal');
+            document.getElementById('admin-password-input').value = ''; // Clear input
+        };
+
+        window.processAdminLogin = function() {
+            const passwordInput = document.getElementById('admin-password-input').value;
+            hideModal('adminLoginModal'); // Hide password modal immediately
+
+            if (passwordInput === ADMIN_PASSWORD) {
+                isAdmin = true; // Set admin flag
+                document.getElementById('admin-logout-btn-container').classList.remove('hidden'); // Show logout button
+                showModal('messageModal', 'Admin Login successful!', 'text-green-600');
+                renderPage('admin'); // Redirect to admin page
+            } else {
+                isAdmin = false; // Ensure admin flag is false
+                document.getElementById('admin-logout-btn-container').classList.add('hidden'); // Hide logout button
+                showModal('messageModal', 'Incorrect Password. Access Denied.', 'text-red-600');
+            }
+        };
+
+        window.adminLogout = async function() {
+            showConfirmationModal('Are you sure you want to log out of the admin panel?', async () => {
+                try {
+                    // For hardcoded password, just reset the isAdmin flag and UI
+                    isAdmin = false;
+                    document.getElementById('admin-logout-btn-container').classList.add('hidden');
+                    showModal('messageModal', 'Logged out successfully!', 'text-green-600');
+                    renderPage('shop'); // Redirect to shop page after logout
+                } catch (error) {
+                    console.error("Error logging out:", error);
+                    showModal('messageModal', 'Error logging out. Please try again.', 'text-red-600');
+                }
+            });
+        };
+
+
+        window.showAddProductForm = function() {
+            if (!isAdmin) {
+                showModal('messageModal', 'Access Denied. You must be logged in as an admin to add products.', 'text-red-600');
+                return;
+            }
+            showModal('add-new-product-modal');
+            document.getElementById('add-product-form').reset();
+            document.getElementById('add-product-preview').src = 'https://placehold.co/200x200/FF8C00/FFFFFF?text=Upload+Image'; // Updated placeholder for 1:1 aspect
+            populateCategoryDropdowns(); // Ensure category dropdown is populated
+        };
+
+        window.addNewProduct = async function() {
+            console.log("addNewProduct function called."); // Debug log
+            const nameInput = document.getElementById('new-product-name');
+            const descriptionInput = document.getElementById('new-product-description');
+            const originalPriceInput = document.getElementById('new-product-original-price');
+            const discountPercentageInput = document.getElementById('new-product-discount-percentage');
+            const stockInput = document.getElementById('new-product-stock');
+            const soldCountInput = document.getElementById('new-product-sold-count');
+            const ratingInput = document.getElementById('new-product-rating');
+            const imageUrlInput = document.getElementById('add-product-preview');
+            const categorySelect = document.getElementById('new-product-category');
+
+            const name = nameInput.value.trim();
+            const description = descriptionInput.value.trim();
+            const originalPrice = parseFloat(originalPriceInput.value);
+            const discountPercentage = parseFloat(discountPercentageInput.value);
+            const stock = parseInt(stockInput.value);
+            const soldCount = parseInt(soldCountInput.value);
+            const rating = parseFloat(ratingInput.value);
+            const imageUrl = imageUrlInput.src;
+            const category = categorySelect.value;
+
+            if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
+                showModal('messageModal', 'Please fill all fields correctly for the new product. Ensure prices are positive, discount is between 0-100, stock and sold count are non-negative, and rating is between 0-5.', 'text-red-600');
+                console.error("Validation failed for new product."); // Debug log
+                return;
+            }
+
+            // Calculate current price based on original price and discount
+            const price = originalPrice * (1 - discountPercentage / 100);
+
+            try {
+                await addProduct({ name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, imageUrl, category });
+                hideModal('add-new-product-modal');
+                filterProducts(); // Explicitly refresh the shop page products
+            } catch (e) {
+                console.error("Error adding product: ", e);
+                showModal('messageModal', 'Error adding product. Please try again.', 'text-red-600');
+            }
+        };
+
+        // --- Category Management Functions ---
+        window.showCategoryManagementModal = function() {
+            if (!isAdmin) {
+                showModal('messageModal', 'Access Denied. You must be logged in as an admin to manage categories.', 'text-red-600');
+                return;
+            }
+            showModal('categoryManagementModal');
+            displayCategoriesForManagement();
+        };
+
+        function displayCategoriesForManagement() {
+            const categoryList = document.getElementById('category-management-list');
+            if (!categoryList) return;
+            categoryList.innerHTML = ''; // Clear existing categories
+
+            if (allCategories.length === 0) {
+                categoryList.innerHTML = '<p class="text-center text-gray-600 text-lg mt-4">No categories added yet.</p>';
+            }
+
+            allCategories.forEach(cat => {
+                const categoryItem = `
+                    <li class="flex justify-between items-center bg-gray-50 p-3 rounded-md mb-2 border border-gray-200">
+                        <span class="text-lg font-medium">${cat.name}</span>
+                        <div>
+                            <button class="btn-secondary bg-blue-500 hover:bg-blue-600 py-1.5 px-3 text-sm mr-2" onclick="editCategory('${cat.id}', '${cat.name}')">Edit</button>
+                            <button class="btn-primary bg-red-500 hover:bg-red-600 py-1.5 px-3 text-sm" onclick="deleteCategory('${cat.id}')">Delete</button>
+                        </div>
+                    </li>
+                `;
+                categoryList.innerHTML += categoryItem;
+            });
+        }
+
+        window.addCategory = async function() {
+            const newCategoryNameInput = document.getElementById('new-category-name');
+            const newCategoryName = newCategoryNameInput.value.trim();
+
+            if (!newCategoryName) {
+                showModal('messageModal', 'Category name cannot be empty.', 'text-red-600');
+                return;
+            }
+            if (allCategories.some(cat => cat.name.toLowerCase() === newCategoryName.toLowerCase())) {
+                showModal('messageModal', 'Category already exists.', 'text-red-600');
+                return;
+            }
+
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to add category before authentication was ready or user was null.");
+                    return;
+                }
+                showModal('messageModal', 'Adding category...', 'text-blue-600');
+                const categoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/categories`); // Use global appId
+                await addDoc(categoriesCollectionRef, { name: newCategoryName });
+                newCategoryNameInput.value = ''; // Clear input
+                showModal('messageModal', 'Category added successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error adding category: ", e);
+                showModal('messageModal', `Error adding category: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+            }
+        };
+
+        window.editCategory = function(categoryId, currentName) {
+            showConfirmationModal(`Edit category name for "${currentName}":`, async () => {
+                const newName = prompt(`Enter new name for "${currentName}":`, currentName); // Still using prompt for simplicity here
+                if (newName === null) { // User cancelled the prompt
+                    showModal('messageModal', 'Category edit cancelled.', 'text-yellow-600');
+                    return;
+                }
+                const trimmedNewName = newName.trim();
+
+                if (!trimmedNewName) {
+                    showModal('messageModal', 'Category name cannot be empty.', 'text-red-600');
+                    return;
+                }
+                if (trimmedNewName.toLowerCase() === currentName.toLowerCase()) {
+                    showModal('messageModal', 'No change detected.', 'text-yellow-600');
+                    return;
+                }
+                if (allCategories.some(cat => cat.name.toLowerCase() === trimmedNewName.toLowerCase() && cat.id !== categoryId)) {
+                    showModal('messageModal', 'Another category with this name already exists.', 'text-red-600');
+                    return;
+                }
+
+                await updateCategory(categoryId, { name: trimmedNewName });
+            });
+        };
+
+        async function updateCategory(categoryId, updates) {
+            try {
+                if (!db) { console.error("Firestore not initialized."); return; }
+                if (!isAuthReady || !auth.currentUser) {
+                    showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                    console.error("Attempted to update category before authentication was ready or user was null.");
+                    return;
+                }
+                showModal('messageModal', 'Updating category...', 'text-blue-600');
+                const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use global appId
+                await updateDoc(categoryDocRef, updates);
+                showModal('messageModal', 'Category updated successfully!', 'text-green-600');
+            } catch (e) {
+                console.error("Error updating category: ", e);
+                showModal('messageModal', `Error updating category: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+            }
+        };
+
+        window.deleteCategory = async function(categoryId) {
+            showConfirmationModal('Are you sure you want to delete this category? Products assigned to this category will become "N/A".', async () => {
+                try {
+                    if (!db) { console.error("Firestore not initialized."); return; }
+                    if (!isAuthReady || !auth.currentUser) {
+                        showModal('messageModal', 'Authentication not ready. Please wait a moment and try again.', 'text-red-600');
+                        console.error("Attempted to delete category before authentication was ready or user was null.");
+                        return;
+                    }
+                    showModal('messageModal', 'Deleting category...', 'text-blue-600');
+                    const categoryDocRef = doc(db, `artifacts/${appId}/public/data/categories`, categoryId); // Use global appId
+                    await deleteDoc(categoryDocRef);
+
+                    // Also update products that belong to this category to 'N/A'
+                    const productsToUpdateQuery = query(collection(db, `artifacts/${appId}/public/data/products`), where("category", "==", allCategories.find(c => c.id === categoryId)?.name || '')); // Use global appId
+                    const productsSnapshot = await getDocs(productsToUpdateQuery);
+                    const batch = writeBatch(db); // Use writeBatch for multiple updates
+                    productsSnapshot.forEach((productDoc) => {
+                        batch.update(productDoc.ref, { category: 'N/A' }); // Set to 'N/A'
+                    });
+                    await batch.commit();
+
+                    showModal('messageModal', 'Category deleted and products updated!', 'text-green-600');
+                } catch (e) {
+                    console.error("Error deleting category: ", e);
+                    showModal('messageModal', `Error deleting category: ${e.message}. Please try again.`, 'text-red-600'); // Show specific error message
+                }
+            });
+        };
+
+        // --- Populate Category Dropdowns for Products ---
+        function populateCategoryDropdowns() {
+            const categoryDropdowns = document.querySelectorAll('select[id$="-category"]'); // Selects all elements whose ID ends with "-category"
+            categoryDropdowns.forEach(dropdown => {
+                const currentSelectedValue = dropdown.value; // Preserve current selection
+                dropdown.innerHTML = '<option value="">-- Select Category --</option>'; // Default empty option
+
+                allCategories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.name;
+                    option.textContent = cat.name;
+                    dropdown.appendChild(option);
+                });
+                // Restore selection if it still exists
+                if (currentSelectedValue && Array.from(dropdown.options).some(option => option.value === currentSelectedValue)) {
+                    dropdown.value = currentSelectedValue;
+                } else {
+                    dropdown.value = ''; // Default to empty if previous value is gone
+                }
+            });
+        }
+
+        // --- Hamburger Menu Logic ---
+        window.toggleHamburgerMenu = function() {
+            const menu = document.getElementById('hamburger-menu');
+            const icon = document.getElementById('hamburger-icon');
+            menu.classList.toggle('open');
+            icon.classList.toggle('open');
+        };
+
+        window.hideHamburgerMenu = function() {
+            const menu = document.getElementById('hamburger-menu');
+            const icon = document.getElementById('hamburger-icon');
+            menu.classList.remove('open');
+            icon.classList.remove('open');
+        };
+
+        function renderCategoryMenu() {
+            const categoryMenu = document.getElementById('category-menu-list');
+            if (!categoryMenu) return;
+            categoryMenu.innerHTML = ''; // Clear existing items
+
+            // Add "All Products" option (always present for filtering)
+            let allProductsItem = document.createElement('li');
+            let allProductsLink = document.createElement('a');
+            allProductsLink.href = "#";
+            allProductsLink.textContent = "All Products";
+            allProductsLink.onclick = (e) => {
+                e.preventDefault();
+                filterProducts('All Products');
+                hideHamburgerMenu();
+                renderPage('shop'); // Ensure we are on the shop page
+            };
+            allProductsItem.appendChild(allProductsLink);
+            categoryMenu.appendChild(allProductsItem);
+
+            // Add dynamic categories
+            allCategories.forEach(cat => {
+                let listItem = document.createElement('li');
+                let link = document.createElement('a');
+                link.href = "#";
+                link.textContent = cat.name;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    filterProducts(cat.name);
+                    hideHamburgerMenu();
+                    renderPage('shop'); // Ensure we are on the shop page
+                };
+                listItem.appendChild(link);
+                categoryMenu.appendChild(listItem);
+            });
+
+            // Add Admin Login button at the very bottom of the menu
+            let adminLoginListItem = document.createElement('li');
+            adminLoginListItem.classList.add('mt-auto', 'pt-4'); // Push to bottom with some padding
+            let adminLoginButton = document.createElement('button');
+            adminLoginButton.classList.add('btn-secondary', 'w-full', 'py-2.5', 'text-base');
+            adminLoginButton.textContent = 'Admin Login';
+            adminLoginButton.onclick = () => {
+                openAdminLoginModal();
+                hideHamburgerMenu(); // Close menu after clicking login
+            };
+            adminLoginListItem.appendChild(adminLoginButton);
+            categoryMenu.appendChild(adminLoginListItem);
+        }
+    </script>
+
+    <!-- Hamburger Menu Sidebar -->
+    <div id="hamburger-menu" class="hamburger-menu">
+        <button class="menu-close-button" onclick="toggleHamburgerMenu()">&times;</button>
+        <h3 class="text-2xl font-bold text-white mb-6">Categories</h3>
+        <ul id="category-menu-list">
+            <!-- Categories and Admin Login button will be rendered here by JavaScript -->
+        </ul>
+    </div>
+
+    <!-- Header Section -->
+    <header class="header-theme py-4 px-4 md:px-8">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center h-full">
+            <button class="hamburger-icon" id="hamburger-icon" onclick="toggleHamburgerMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-0 cursor-pointer ml-16" onclick="renderPage('shop')">Flourish Boutique</h1>
+            <div class="flex items-center space-x-4">
+                <button id="shop-now-btn" class="btn-secondary text-base py-2 px-6" onclick="document.getElementById('products-section').scrollIntoView({ behavior: 'smooth' });">Shop Now</button>
+                <!-- Admin Login button removed from here -->
+                <div id="admin-logout-btn-container" class="hidden">
+                    <button class="btn-primary text-base py-2 px-6 bg-red-500 hover:bg-red-600" onclick="adminLogout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow">
+        <!-- Auth Status Message (for debugging on phone) -->
+        <div id="auth-status-message" class="text-center text-sm mt-2 text-gray-600"></div>
+
+        <!-- Hero Section (only visible on shop page) -->
+        <section id="hero-section" class="bg-gradient-to-r from-orange-500 to-orange-700 text-white py-24 px-4 md:px-8 text-center shadow-lg">
+            <h2 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight leading-tight">Welcome to Flourish Boutique</h2>
+            <p class="text-xl md:text-2xl mb-8 font-light max-w-3xl mx-auto opacity-90">Discover unique finds that inspire and delight.</p>
+            <div class="mt-8 text-lg font-semibold flex items-center justify-center space-x-2">
+                <span class="text-yellow-300 text-2xl">&#128274;</span> <!-- Padlock icon -->
+                <span>Your Secure Shopping Destination</span>
+            </div>
+        </section>
+
+        <!-- Trending Products Carousel Section -->
+        <section id="carousel-section" class="py-12 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-6 text-center">Trending Products</h2>
+                <div id="product-carousel" class="flex overflow-x-auto snap-x snap-mandatory pb-4">
+                    <!-- Product cards will be inserted here by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Products Section -->
+        <section id="products-section" class="py-16 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-10">Our Products</h2>
+                <div class="mb-10 flex justify-center">
+                    <input type="text" id="search-input" onkeyup="filterProducts()" placeholder="Search products by name or description..." class="w-full max-w-md p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+                <!-- Adjusted grid columns for product display -->
+                <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                    <!-- Products will be loaded here by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Admin Panel Section -->
+        <section id="admin-panel" class="hidden py-16 px-4 md:px-8">
+            <div class="max-w-6xl mx-auto content-card">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-10">Admin Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-center">
+                    <div class="bg-orange-50 p-6 rounded-lg shadow-sm border border-orange-200">
+                        <p class="text-orange-700 text-lg font-semibold">Total Products</p>
+                        <p id="admin-product-count" class="text-4xl font-bold text-orange-800 mt-2">0</p>
+                    </div>
+                    <div class="bg-orange-50 p-6 rounded-lg shadow-sm border border-orange-200">
+                        <p class="text-orange-700 text-lg font-semibold">Total Orders</p>
+                        <p id="admin-order-count" class="text-4xl font-bold text-orange-800 mt-2">0</p>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-6">Customer Orders</h3>
+                <div class="text-center mb-6 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button class="btn-secondary py-2.5 px-6 text-base" onclick="renderPage('shop')">Back to Shop</button>
+                    <button class="btn-primary py-2.5 px-6 text-base" onclick="renderPage('edit')">Go to Edit Mode</button>
+                </div>
+                <div id="admin-orders-list" class="space-y-4">
+                    <!-- Customer orders will be displayed here by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Edit Mode Panel Section -->
+        <section id="edit-mode-panel" class="hidden py-16 px-4 md:px-8">
+            <div class="max-w-7xl mx-auto content-card">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 text-center mb-10">Admin Edit Mode - Manage Products</h2>
+                <div class="text-center mb-8 flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+                    <button class="btn-primary bg-green-600 hover:bg-green-700 py-2.5 px-6 text-base" onclick="showAddProductForm()">Add New Product</button>
+                    <button class="btn-primary bg-blue-600 hover:bg-blue-700 py-2.5 px-6 text-base" onclick="showCategoryManagementModal()">Manage Categories</button>
+                    <button class="btn-secondary py-2.5 px-6 text-base" onclick="renderPage('admin')">Back to Admin Dashboard</button>
+                    <button class="btn-secondary py-2.5 px-6 text-base" onclick="renderPage('shop')">Back to Shop</button>
+                </div>
+                <div id="editable-products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                    <!-- Editable products will be loaded here by JavaScript -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Thank You Message -->
+    <div id="thank-you-message" class="thank-you-message">
+        <i class="fas fa-check-circle"></i>
+        <span>Thank you for your order!</span>
+    </div>
+
+    <!-- Product Detail Modal -->
+    <div id="productDetailModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2 xl:w-2/5">
+            <button class="close-button" onclick="hideModal('productDetailModal')">&times;</button>
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="md:w-1/2">
+                    <!-- Image with onclick for enlargement, using this.src -->
+                    <div class="product-image-container mb-4">
+                        <img id="detail-product-image" src="" alt="Product Image" class="cursor-pointer">
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex flex-col justify-between">
+                    <div>
+                        <h2 id="detail-product-name" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+                        <p id="detail-product-description" class="text-gray-700 text-base mb-4"></p>
+                        <p class="text-gray-600 text-sm mb-2">Category: <span id="detail-product-category" class="font-medium"></span></p>
+                        <p id="detail-product-price" class="mb-2"></p>
+                        <p id="detail-product-savings" class="savings-text hidden mb-4"></p>
+                        <p id="detail-product-stock" class="font-semibold text-base mb-4"></p> <!-- Stock Quantity Display -->
+                        <input type="hidden" id="detail-product-id">
+                        <!-- Quantity input in product detail modal -->
+                        <div class="flex items-center justify-center mt-3 mb-4">
+                            <label for="detail-quantity-input" class="sr-only">Quantity</label>
+                            <input type="number" id="detail-quantity-input" value="1" min="1"
+                                class="w-24 p-2 border border-gray-300 rounded-md text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                    </div>
+                    <button id="detail-modal-order-button" class="btn-primary w-full text-lg py-3">Add to Cart</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Enlarge Modal -->
+    <div id="imageEnlargeModal" class="modal-overlay hidden">
+        <div class="modal-content-base">
+            <button class="close-button" onclick="hideModal('imageEnlargeModal')">&times;</button>
+            <img id="enlarged-image" src="" alt="Enlarged Product Image">
+        </div>
+    </div>
+
+    <!-- Order Modal -->
+    <div id="orderModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2 xl:w-1/3">
+            <button class="close-button" onclick="hideModal('orderModal')">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Secure Checkout</h2>
+            <p class="text-center text-sm text-gray-600 mb-6 flex items-center justify-center">
+                <span class="text-green-600 mr-2 text-xl">&#128274;</span> Your information is safe and secure.
+            </p>
+            <form id="order-form" class="space-y-4">
+                <input type="hidden" id="order-product-id">
+                <input type="hidden" id="order-product-name">
+                <input type="hidden" id="order-product-price">
+                <input type="hidden" id="order-quantity"> <!-- Hidden field to store quantity -->
+
+                <p id="order-total-price" class="text-xl font-bold text-center text-orange-700 mb-4">Total: MUR 0.00</p>
+
+                <div>
+                    <label for="full-name" class="block text-gray-700 text-sm font-bold mb-1">Full Name <span class="text-red-500">*</span>:</label>
+                    <input type="text" id="full-name" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="John Doe">
+                </div>
+                <div>
+                    <label for="contact-number" class="block text-gray-700 text-sm font-bold mb-1">Contact Number <span class="text-red-500">*</span>:</label>
+                    <input type="tel" id="contact-number" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="+230 5xxxxxxx">
+                </div>
+                <div>
+                    <label for="email-address" class="block text-gray-700 text-sm font-bold mb-1">Email Address (Optional):</label>
+                    <input type="email" id="email-address" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="your.email@example.com">
+                </div>
+                <div>
+                    <label for="payment-method" class="block text-gray-700 text-sm font-bold mb-1">Method of Payment <span class="text-red-500">*</span>:</label>
+                    <select id="payment-method" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white" onchange="handlePaymentMethodChange()" required>
+                        <option value="">-- Select Payment Method --</option>
+                        <option value="juice">Juice by MCB</option>
+                        <option value="cash">Cash in Hand Transaction</option>
+                    </select>
+                </div>
+                <div id="payment-details" class="mt-3 p-3 bg-orange-50 rounded-md text-orange-800 border border-orange-200">
+                    <!-- Payment details will appear here based on selection -->
+                </div>
+                <div id="cash-in-hand-address" class="hidden mt-3">
+                    <label for="delivery-address" class="block text-gray-700 text-sm font-bold mb-1">Delivery Address <span class="text-red-500">*</span>:</label>
+                    <textarea id="delivery-address" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" rows="3" placeholder="Enter your full delivery address"></textarea>
+                </div>
+                <button type="button" class="btn-primary w-full mt-6 text-base py-2.5" onclick="processOrder()">Proceed to Secure Checkout <span id="order-spinner" class="spinner hidden"></span></button>
+            </form>
+            <p class="text-center text-xs text-gray-500 mt-4">By clicking "Proceed to Secure Checkout", you agree to our <a href="#" class="text-orange-600 hover:underline">Terms of Service</a>.</p>
+        </div>
+    </div>
+
+    <!-- Message Modal (for general messages like errors/success) -->
+    <div id="messageModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-1/2 lg:w-1/3 p-8 text-center">
+            <button class="close-button" onclick="hideModal('messageModal')">&times;</button>
+            <p id="modal-message" class="text-xl font-semibold mb-6"></p>
+            <button class="btn-primary px-6 py-2.5" onclick="hideModal('messageModal')">OK</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmationModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-1/2 lg:w-1/3 p-8 text-center">
+            <button class="close-button" onclick="handleCancel()">&times;</button>
+            <p id="confirmation-message" class="text-xl font-semibold mb-6 text-gray-800"></p>
+            <div class="flex justify-center space-x-4">
+                <button class="btn-primary bg-red-600 hover:bg-red-700 px-6 py-2.5" onclick="handleConfirm()">Confirm</button>
+                <button class="btn-secondary px-6 py-2.5" onclick="handleCancel()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Login Modal (using hardcoded password) -->
+    <div id="adminLoginModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-1/2 lg:w-1/4 p-8 text-center">
+            <button class="close-button" onclick="hideModal('adminLoginModal')">&times;</button>
+            <h3 class="text-xl font-bold text-gray-800 mb-5">Admin Login</h3>
+            <input type="password" id="admin-password-input" class="w-full p-2 border border-gray-300 rounded-sm mb-5 text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Password">
+            <button class="btn-primary w-full py-2.5" onclick="processAdminLogin()">Login</button>
+        </div>
+    </div>
+
+    <!-- Add New Product Modal -->
+    <div id="add-new-product-modal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2 xl:w-1/3 add-product-form-container">
+            <button class="close-button" onclick="hideModal('add-new-product-modal')">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Add New Product</h2>
+            <form id="add-product-form" class="space-y-4">
+                <div class="flex flex-col items-center">
+                    <label for="new-product-image" class="cursor-pointer mb-3 flex justify-center items-center h-40 w-full border border-dashed border-gray-300 rounded-md overflow-hidden bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                        <img id="add-product-preview" src="https://placehold.co/200x200/FF8C00/FFFFFF?text=Upload+Image" alt="New Product Image" class="w-full h-full object-cover">
+                        <input type="file" id="new-product-image" class="hidden" accept="image/*" onchange="previewNewProductImage(event)">
+                    </label>
+                </div>
+                <div>
+                    <label for="new-product-name" class="block text-gray-700 text-sm font-bold mb-1">Product Name <span class="text-red-500">*</span>:</label>
+                    <input type="text" id="new-product-name" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="New Product Name">
+                </div>
+                <div>
+                    <label for="new-product-description" class="block text-gray-700 text-sm font-bold mb-1">Description <span class="text-red-500">*</span>:</label>
+                    <textarea id="new-product-description" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500 h-24 resize-y" required placeholder="A brief description of the product..."></textarea>
+                </div>
+                <div>
+                    <label for="new-product-original-price" class="block text-gray-700 text-sm font-bold mb-1">Original Price (MUR) <span class="text-red-500">*</span>:</label>
+                    <input type="number" id="new-product-original-price" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" step="0.01" required placeholder="999.99">
+                </div>
+                <div>
+                    <label for="new-product-discount-percentage" class="block text-gray-700 text-sm font-bold mb-1">Discount % (0-100):</label>
+                    <input type="number" id="new-product-discount-percentage" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" max="100" step="1" value="0">
+                </div>
+                <div>
+                    <label for="new-product-stock" class="block text-gray-700 text-sm font-bold mb-1">Stock Quantity <span class="text-red-500">*</span>:</label>
+                    <input type="number" id="new-product-stock" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" step="1" required placeholder="e.g., 100">
+                </div>
+                <div>
+                    <label for="new-product-sold-count" class="block text-gray-700 text-sm font-bold mb-1">Sold Count:</label>
+                    <input type="number" id="new-product-sold-count" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" step="1" value="0">
+                </div>
+                <div>
+                    <label for="new-product-rating" class="block text-gray-700 text-sm font-bold mb-1">Rating (0-5):</label>
+                    <input type="number" id="new-product-rating" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" max="5" step="0.1" value="0">
+                </div>
+                <div>
+                    <label for="new-product-category" class="block text-gray-700 text-sm font-bold mb-1">Category:</label>
+                    <select id="new-product-category" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                        <!-- Categories will be populated here by JavaScript -->
+                    </select>
+                </div>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mt-5">
+                    <button type="button" class="btn-primary flex-1 py-2.5 text-base" onclick="addNewProduct()">Save Product <span id="add-product-spinner" class="spinner hidden"></span></button>
+                    <button type="button" class="btn-secondary bg-gray-500 hover:bg-gray-600 flex-1 py-2.5 text-base" onclick="hideModal('add-new-product-modal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Category Management Modal -->
+    <div id="categoryManagementModal" class="modal-overlay hidden">
+        <div class="modal-content-base w-full md:w-2/3 lg:w-1/2">
+            <button class="close-button" onclick="hideModal('categoryManagementModal')">&times;</button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Manage Product Categories</h2>
+            <div class="mb-6">
+                <label for="new-category-name" class="block text-gray-700 text-sm font-bold mb-1">Add New Category:</label>
+                <div class="flex space-x-2">
+                    <input type="text" id="new-category-name" class="flex-grow p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:focus:ring-orange-500" placeholder="e.g., Electronics, Apparel">
+                    <button class="btn-primary py-2 px-4 text-base" onclick="addCategory()">Add</button>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold text-gray-800 mb-4">Existing Categories:</h3>
+                <ul id="category-management-list" class="space-y-2">
+                    <!-- Categories will be listed here by JavaScript -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-6 px-4 md:px-8 text-center mt-auto">
+        <p class="text-base mb-2">Designed with ❤️ using HTML, JavaScript and Tailwind CSS</p>
+        <div class="text-sm text-gray-400 flex justify-center space-x-4">
+            <a href="#" class="text-orange-300 hover:underline">Privacy Policy</a>
+            <a href="#" class="text-orange-300 hover:underline">Terms of Service</a>
+        </div>
+    </footer>
+</body>
+</html>
