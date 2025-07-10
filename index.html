@@ -1484,7 +1484,7 @@
                     <div class="bg-white p-5 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-200">
                         <div class="flex-grow">
                             <p class="font-bold text-lg text-gray-800 mb-1">${order.fullName}</p>
-                            ${order.selectedColor && order.selectedColor !== '' ? `<p class="text-gray-700 text-sm">Colour: <span class="font-medium">${order.selectedColor}</span></p>` : ''}
+                            ${order.selectedColor && order.selectedColor !== 'N/A' ? `<p class="text-gray-700 text-sm">Colour: <span class="font-medium">${order.selectedColor}</span></p>` : ''}
                             <p class="text-gray-700 text-sm">Contact: <span class="font-medium">${order.contactNumber}</span></p>
                             <p class="text-gray-700 text-sm">Email: <span class="font-medium">${order.emailAddress || 'N/A'}</span></p>
                             <p class="text-gray-700 mt-2">Product: <span class="font-semibold">${order.productName}</span> (Qty: ${order.quantity || 1}) (MUR ${order.productPrice})</p>
@@ -1671,7 +1671,9 @@
 
             try {
                 await updateProduct(productId, { name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, images, category, hotspots }); // Include images and hotspots
-                applyProductFilters(); // Explicitly refresh the shop page products after saving edits
+                // Redirect to shop page and filter by the updated category
+                renderPage('shop');
+                applyProductFilters(category);
             } catch (e) {
                 console.error("Error saving edited product: ", e);
                 showModal('messageModal', 'Error saving product changes. Please try again.', 'text-red-600');
@@ -1980,7 +1982,9 @@
             try {
                 await addProduct({ name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, images, category, hotspots }); // Include images and hotspots
                 hideModal('add-new-product-modal');
-                applyProductFilters();
+                // Redirect to shop page and filter by the newly added category
+                renderPage('shop');
+                applyProductFilters(category);
             } catch (e) {
                 console.error("Error adding product: ", e);
                 showModal('messageModal', 'Error adding product. Please try again.', 'text-red-600');
