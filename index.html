@@ -1643,21 +1643,28 @@
 
             // Parse hotspots JSON
             try {
-                const parsedHotspots = JSON.parse(hotspotsInput.value);
-                if (!Array.isArray(parsedHotspots)) {
-                    throw new Error("Hotspots must be a JSON array.");
-                }
-                // Validate each hotspot object
-                hotspots = parsedHotspots.map(h => {
-                    if (typeof h.x !== 'number' || typeof h.y !== 'number' || typeof h.name !== 'string' || typeof h.details !== 'string' || h.x < 0 || h.x > 100 || h.y < 0 || h.y > 100) {
-                        throw new Error("Each hotspot must have numeric x (0-100), y (0-100), string name, and string details.");
+                const rawHotspots = hotspotsInput.value.trim();
+                if (rawHotspots) { // Only parse if not empty
+                    const parsedHotspots = JSON.parse(rawHotspots);
+                    if (!Array.isArray(parsedHotspots)) {
+                        throw new Error("Hotspots must be a JSON array.");
                     }
-                    return { x: h.x, y: h.y, name: h.name, details: h.details };
-                });
+                    hotspots = parsedHotspots.map(h => {
+                        // Ensure properties exist and are of correct type
+                        if (typeof h.x !== 'number' || typeof h.y !== 'number' || typeof h.name !== 'string' || typeof h.details !== 'string') {
+                            throw new Error("Each hotspot object requires numeric 'x', 'y' and string 'name', 'details'.");
+                        }
+                        // Add range validation for x, y
+                        if (h.x < 0 || h.x > 100 || h.y < 0 || h.y > 100) {
+                            throw new Error("Hotspot 'x' and 'y' coordinates must be between 0 and 100.");
+                        }
+                        return { x: h.x, y: h.y, name: h.name, details: h.details };
+                    });
+                }
             } catch (e) {
                 showModal('messageModal', `Invalid Hotspots JSON: ${e.message}`, 'text-red-600');
                 console.error("Invalid Hotspots JSON:", e);
-                return;
+                return; // Stop execution if validation fails
             }
 
             if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
@@ -1668,6 +1675,9 @@
 
             // Calculate current price based on original price and discount
             const price = originalPrice * (1 - discountPercentage / 100);
+
+            console.log("Attempting to save product with images:", images);
+            console.log("Attempting to save product with hotspots:", hotspots);
 
             try {
                 await updateProduct(productId, { name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, images, category, hotspots }); // Include images and hotspots
@@ -1953,21 +1963,28 @@
 
             // Parse hotspots JSON
             try {
-                const parsedHotspots = JSON.parse(hotspotsInput.value);
-                if (!Array.isArray(parsedHotspots)) {
-                    throw new Error("Hotspots must be a JSON array.");
-                }
-                // Validate each hotspot object
-                hotspots = parsedHotspots.map(h => {
-                    if (typeof h.x !== 'number' || typeof h.y !== 'number' || typeof h.name !== 'string' || typeof h.details !== 'string' || h.x < 0 || h.x > 100 || h.y < 0 || h.y > 100) {
-                        throw new Error("Each hotspot must have numeric x (0-100), y (0-100), string name, and string details.");
+                const rawHotspots = hotspotsInput.value.trim();
+                if (rawHotspots) { // Only parse if not empty
+                    const parsedHotspots = JSON.parse(rawHotspots);
+                    if (!Array.isArray(parsedHotspots)) {
+                        throw new Error("Hotspots must be a JSON array.");
                     }
-                    return { x: h.x, y: h.y, name: h.name, details: h.details };
-                });
+                    hotspots = parsedHotspots.map(h => {
+                        // Ensure properties exist and are of correct type
+                        if (typeof h.x !== 'number' || typeof h.y !== 'number' || typeof h.name !== 'string' || typeof h.details !== 'string') {
+                            throw new Error("Each hotspot object requires numeric 'x', 'y' and string 'name', 'details'.");
+                        }
+                        // Add range validation for x, y
+                        if (h.x < 0 || h.x > 100 || h.y < 0 || h.y > 100) {
+                            throw new Error("Hotspot 'x' and 'y' coordinates must be between 0 and 100.");
+                        }
+                        return { x: h.x, y: h.y, name: h.name, details: h.details };
+                    });
+                }
             } catch (e) {
                 showModal('messageModal', `Invalid Hotspots JSON: ${e.message}`, 'text-red-600');
                 console.error("Invalid Hotspots JSON:", e);
-                return;
+                return; // Stop execution if validation fails
             }
 
             if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
@@ -1978,6 +1995,9 @@
 
             // Calculate current price based on original price and discount
             const price = originalPrice * (1 - discountPercentage / 100);
+
+            console.log("Attempting to add product with images:", images);
+            console.log("Attempting to add product with hotspots:", hotspots);
 
             try {
                 await addProduct({ name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, images, category, hotspots }); // Include images and hotspots
