@@ -263,7 +263,7 @@
             transition: left 0.3s ease-out;
             z-index: 999; /* Below modals, above main content */
             display: flex;
-            flex-direction: column;
+            flex-direction: column; /* Ensure vertical layout */
         }
         .hamburger-menu.open {
             left: 0;
@@ -272,9 +272,10 @@
             list-style: none;
             padding: 0;
             margin-top: 2rem;
-            flex-grow: 1; /* Allow the list to grow and push admin button to bottom */
-            display: flex;
-            flex-direction: column;
+            flex-grow: 1; /* Allow the list to grow and push sticky button to bottom */
+            overflow-y: auto; /* Make the category list scrollable */
+            -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
+            padding-bottom: 1rem; /* Space above the sticky button */
         }
         .hamburger-menu ul li {
             margin-bottom: 1rem;
@@ -334,6 +335,20 @@
             color: white;
             font-size: 2rem;
             cursor: pointer;
+        }
+
+        /* Sticky Admin Login Button Container */
+        .admin-sticky-button-container {
+            padding-top: 1rem; /* Space below the categories */
+            border-top: 1px solid rgba(255,255,255,0.1); /* Separator line */
+            background-color: #333; /* Match menu background */
+            padding-bottom: 1rem; /* Padding at the very bottom */
+            position: sticky; /* Make it sticky */
+            bottom: 0; /* Stick to the bottom */
+            z-index: 10; /* Ensure it's above scrolling content */
+            width: 100%;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2); /* Shadow for sticky effect */
+            text-align: center; /* Center the button */
         }
 
         /* Carousel Specific Styles */
@@ -547,29 +562,6 @@
             z-index: 5; /* Below nav buttons, above image */
             pointer-events: none; /* Allow clicks to pass through by default */
         }
-        .hotspot-marker {
-            position: absolute;
-            width: 24px; /* Size of the marker */
-            height: 24px;
-            background-color: #FF8C00; /* Orange dot */
-            border-radius: 50%;
-            border: 2px solid white;
-            transform: translate(-50%, -50%); /* Center the marker on the x,y point */
-            cursor: pointer;
-            pointer-events: all; /* Make the marker clickable */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px; /* Small icon inside */
-            color: white;
-            font-weight: bold;
-            box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.5); /* Glowing effect */
-            transition: transform 0.2s ease, background-color 0.2s ease;
-        }
-        .hotspot-marker:hover {
-            transform: translate(-50%, -50%) scale(1.2);
-            background-color: #FF6347; /* Darker orange on hover */
-        }
         /* Hotspot Detail Modal */
         .hotspot-detail-modal-content {
             background-color: white;
@@ -580,6 +572,28 @@
             text-align: center;
             position: relative;
         }
+
+        /* Image Enlarge Modal Specific Styles */
+        #imageEnlargeModal .modal-content-base {
+            background-color: transparent; /* Transparent background for image modal */
+            box-shadow: none; /* No shadow */
+            padding: 0; /* No padding */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 95%; /* Allow image to take more space */
+            max-height: 95%;
+        }
+        #imageEnlargeModal img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Ensure the whole image is visible */
+            border-radius: 0.5rem; /* Rounded corners for the enlarged image */
+        }
+        #imageEnlargeModal .close-button {
+            color: white; /* White close button for dark background */
+            text-shadow: 0 0 5px rgba(0,0,0,0.5); /* Shadow to make it visible */
+        }
     </style>
 </head>
 <body class="scroll-smooth">
@@ -588,11 +602,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, writeBatch, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
 
         // Global Firebase variables
         let app;
         let db;
         let auth;
+        let storage; // Added Firebase Storage
         let userId;
         let isAdmin = false; // Flag to determine if the current user is an admin
         let isAuthReady = false; // Flag to indicate if auth is ready
@@ -617,6 +634,16 @@
         let detailImages = [];
         let currentDetailImageIndex = 0;
 
+        // Default categories to seed
+        const defaultCategories = [
+            "Beauty & Care",
+            "Electronics",
+            "Plastic Containers",
+            "Jewellery",
+            "Baby shop",
+            "Household Products & DIY"
+        ];
+
 
         // Initialize Firebase when the window loads
         window.onload = async function() {
@@ -627,6 +654,7 @@
                     authDomain: "flourish-boutique.firebaseapp.com",
                     projectId: "flourish-boutique",
                     storageBucket: "flourish-boutique.firebasestorage.app",
+                    messagingSenderId: "34816935044",
                     appId: "1:34816935044:web:d529f7e13d5fdbd08caed1",
                     measurementId: "G-D4EZM4MHF7"
                 };
@@ -643,6 +671,7 @@
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
+                storage = getStorage(app); // Initialize Firebase Storage
 
                 // Display initial auth status message
                 updateAuthStatusMessage('Initializing authentication...');
@@ -675,8 +704,8 @@
                         }
                     }
                     isAuthReady = true; // Set auth ready flag
-                    // Now that auth is ready, initialize Firestore listeners
-                    initializeFirestoreListeners();
+                    await seedDefaultCategories(); // Seed categories after auth is ready
+                    initializeFirestoreListeners(); // Then initialize Firestore listeners
                     renderPage(currentPage); // Render initial page after auth is ready
                 });
 
@@ -695,6 +724,35 @@
                 updateAuthStatusMessage('Firebase initialization failed!', 'text-red-600');
             }
         };
+
+        /**
+         * Seeds default categories into Firestore if they don't already exist.
+         */
+        async function seedDefaultCategories() {
+            if (!db || !appId) {
+                console.warn("Firestore or App ID not ready for category seeding.");
+                return;
+            }
+            const categoriesCollectionRef = collection(db, `artifacts/${appId}/public/data/categories`);
+            for (const categoryName of defaultCategories) {
+                try {
+                    // Check if category already exists
+                    const q = query(categoriesCollectionRef, where("name", "==", categoryName));
+                    const querySnapshot = await getDocs(q);
+
+                    if (querySnapshot.empty) {
+                        // Category does not exist, add it
+                        await addDoc(categoriesCollectionRef, { name: categoryName });
+                        console.log(`Seeded category: ${categoryName}`);
+                    } else {
+                        console.log(`Category already exists: ${categoryName}`);
+                    }
+                } catch (e) {
+                    console.error(`Error seeding category ${categoryName}:`, e);
+                }
+            }
+        }
+
 
         /**
          * Updates the authentication status message displayed in the UI.
@@ -761,15 +819,53 @@
             onSnapshot(productsCollectionRef, (snapshot) => {
                 allProducts = []; // Clear previous products
                 snapshot.forEach(doc => {
-                    // Convert old imageUrls (array of strings) to new images (array of objects) if necessary
                     const data = doc.data();
-                    if (data.imageUrls && Array.isArray(data.imageUrls) && data.imageUrls.length > 0 && typeof data.imageUrls[0] === 'string') {
-                        data.images = data.imageUrls.map(url => ({ url: url, caption: '' })); // Default empty caption
-                        delete data.imageUrls; // Remove old field
-                    } else if (!data.images) {
-                        data.images = []; // Ensure images array exists
+                    let images = [];
+                    let hotspots = [];
+
+                    // Attempt to parse imagesJson, fallback to empty array if not present or invalid
+                    if (data.imagesJson) {
+                        try {
+                            images = JSON.parse(data.imagesJson);
+                            // Ensure parsed images is an array of objects with url and caption
+                            if (!Array.isArray(images)) {
+                                images = [];
+                                console.warn("Parsed imagesJson is not an array:", data.imagesJson);
+                            } else {
+                                images = images.map(img => ({
+                                    url: String(img.url || '').trim(),
+                                    caption: String(img.caption || '').trim()
+                                })).filter(img => img.url !== ''); // Filter out invalid entries
+                            }
+                        } catch (e) {
+                            console.error("Error parsing imagesJson for product:", doc.id, e);
+                            images = [];
+                        }
                     }
-                    allProducts.push({ id: doc.id, ...data });
+
+                    // Attempt to parse hotspotsJson, fallback to empty array if not present or invalid
+                    if (data.hotspotsJson) {
+                        try {
+                            hotspots = JSON.parse(data.hotspotsJson);
+                            // Ensure parsed hotspots is an array of objects with x, y, name, details
+                            if (!Array.isArray(hotspots)) {
+                                hotspots = [];
+                                console.warn("Parsed hotspotsJson is not an array:", data.hotspotsJson);
+                            } else {
+                                hotspots = hotspots.map(h => ({
+                                    x: Number(h.x) || 0,
+                                    y: Number(h.y) || 0,
+                                    name: String(h.name || '').trim(),
+                                    details: String(h.details || '').trim()
+                                })).filter(h => h.name !== '' && h.details !== ''); // Filter out invalid entries
+                            }
+                        } catch (e) {
+                            console.error("Error parsing hotspotsJson for product:", doc.id, e);
+                            hotspots = [];
+                        }
+                    }
+
+                    allProducts.push({ id: doc.id, ...data, images, hotspots });
                 });
                 console.log("Products updated by onSnapshot:", allProducts);
                 applyProductFilters(); // Display all products initially, or apply current filter
@@ -920,7 +1016,7 @@
         }
 
         /**
-         * Displays products in the main shop grid.
+         * Displays products in the main shop grid (now a horizontal scroll).
          * @param {Array<Object>} products - Array of product objects to display.
          */
         function displayProducts(products) {
@@ -929,29 +1025,23 @@
             productsGrid.innerHTML = ''; // Clear existing products
 
             if (products.length === 0) {
-                productsGrid.innerHTML = '<p class="text-center text-gray-600 col-span-full text-xl mt-8">No products found matching your criteria.</p>';
+                // If no products, display a message centered within the container
+                productsGrid.innerHTML = '<p class="text-center text-gray-600 w-full text-xl mt-8">No products found matching your criteria.</p>';
                 return;
             }
 
             products.forEach((product, index) => {
-                const isOutOfStock = product.stock === 0;
-                const orderButtonClass = isOutOfStock ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-primary';
-                const orderButtonText = isOutOfStock ? 'Out of Stock' : 'Click to Order'; // Changed text
-                const orderButtonDisabled = isOutOfStock ? 'disabled' : '';
-
                 // Calculate discounted price and savings
                 const originalPrice = parseFloat(product.originalPrice || product.price || 0); // Use originalPrice if available, else current price, default to 0
                 const discountPercentage = parseFloat(product.discountPercentage || 0);
                 const currentPrice = originalPrice * (1 - discountPercentage / 100);
 
-                const soldCount = product.soldCount !== undefined ? product.soldCount : 0;
-                const rating = product.rating !== undefined ? product.rating : 0;
-
                 // Use the first image from the 'images' array for display, default to placeholder
                 const imageUrlToDisplay = (product.images && product.images.length > 0 && product.images[0].url) ? product.images[0].url : 'https://placehold.co/200x200/FF8C00/FFFFFF?text=Product';
 
+                // Added w-60 and flex-none for horizontal scrolling
                 const productCard = `
-                    <div class="product-card flex flex-col" style="animation-delay: ${index * 0.05}s;">
+                    <div class="product-card flex-none w-60 mr-4" style="animation-delay: ${index * 0.05}s;">
                         <div class="cursor-pointer flex-grow flex flex-col" onclick="showProductDetail('${product.id}')">
                             <div class="product-image-container">
                                 <img src="${imageUrlToDisplay}" alt="${product.name}">
@@ -963,24 +1053,7 @@
                                 ${discountPercentage > 0 ? `<span class="original-price">MUR ${originalPrice.toFixed(2)}</span>` : ''}
                                 <span class="current-price">MUR ${currentPrice.toFixed(2)}</span>
                             </div>
-                            ${discountPercentage > 0 ? `<p class="savings-text">Savings -${discountPercentage}% Now</p>` : ''}
-                            <div class="sold-rating">
-                                <span>${soldCount}+ sold</span>
-                                <span class="ml-2">${getStarRatingHtml(rating)} ${rating.toFixed(1)}</span>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1">Stock: ${product.stock}</p>
                         </div>
-                        <!-- Quantity Input -->
-                        <div class="quantity-input-container flex items-center justify-center mt-3 mb-4">
-                            <label for="quantity-${product.id}" class="sr-only">Quantity</label>
-                            <input type="number" id="quantity-${product.id}" value="1" min="1" max="${product.stock}"
-                                class="w-24 p-2 border border-gray-300 rounded-md text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                onchange="if(this.value < 1) this.value = 1; if(this.value > ${product.stock}) this.value = ${product.stock};"
-                                ${isOutOfStock ? 'disabled' : ''}>
-                        </div>
-                        <button class="${orderButtonClass} w-full text-base py-2" ${orderButtonDisabled} onclick="showOrderFormFromDetail('${product.id}', '${product.name}', '${currentPrice.toFixed(2)}', ${product.stock}, document.getElementById('quantity-${product.id}').value)">
-                            ${orderButtonText}
-                        </button>
                     </div>
                 `;
                 productsGrid.innerHTML += productCard;
@@ -1006,11 +1079,6 @@
             }
 
             productsForCarousel.forEach((product, index) => {
-                const isOutOfStock = product.stock === 0;
-                const orderButtonClass = isOutOfStock ? 'btn-secondary opacity-50 cursor-not-allowed' : 'btn-primary';
-                const orderButtonText = isOutOfStock ? 'Out of Stock' : 'Click to Order'; // Changed text
-                const orderButtonDisabled = isOutOfStock ? 'disabled' : '';
-
                 // Use the first image from the 'images' array for display, default to placeholder
                 const imageUrlToDisplay = (product.images && product.images.length > 0 && product.images[0].url) ? product.images[0].url : 'https://placehold.co/180x180/FF8C00/FFFFFF?text=Product';
 
@@ -1018,9 +1086,6 @@
                 const originalPrice = parseFloat(product.originalPrice || product.price || 0);
                 const discountPercentage = parseFloat(product.discountPercentage || 0);
                 const currentPrice = originalPrice * (1 - discountPercentage / 100);
-
-                const soldCount = product.soldCount !== undefined ? product.soldCount : 0;
-                const rating = product.rating !== undefined ? product.rating : 0;
 
                 const productCard = `
                     <div class="carousel-product-card flex flex-col" style="animation-delay: ${index * 0.05}s;">
@@ -1035,23 +1100,7 @@
                                 ${discountPercentage > 0 ? `<span class="original-price">MUR ${originalPrice.toFixed(2)}</span>` : ''}
                                 <span class="current-price">MUR ${currentPrice.toFixed(2)}</span>
                             </div>
-                            ${discountPercentage > 0 ? `<p class="savings-text">Savings -${discountPercentage}% Now</p>` : ''}
-                            <div class="sold-rating">
-                                <span>${soldCount}+ sold</span>
-                                <span class="ml-2">${getStarRatingHtml(rating)} ${rating.toFixed(1)}</span>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1">Stock: ${product.stock}</p>
                         </div>
-                        <div class="quantity-input-container flex items-center justify-center mt-3 mb-4">
-                            <label for="carousel-quantity-${product.id}" class="sr-only">Quantity</label>
-                            <input type="number" id="carousel-quantity-${product.id}" value="1" min="1" max="${product.stock}"
-                                class="w-24 p-2 border border-gray-300 rounded-md text-center text-base focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                onchange="if(this.value < 1) this.value = 1; if(this.value > ${product.stock}) this.value = ${product.stock};"
-                                ${isOutOfStock ? 'disabled' : ''}>
-                        </div>
-                        <button class="${orderButtonClass} w-full text-base py-2" ${orderButtonDisabled} onclick="showOrderFormFromDetail('${product.id}', '${product.name}', '${currentPrice.toFixed(2)}', ${product.stock}, document.getElementById('carousel-quantity-${product.id}').value)">
-                            ${orderButtonText}
-                        </button>
                     </div>
                 `;
                 carouselContainer.innerHTML += productCard;
@@ -1150,6 +1199,14 @@
             document.getElementById('detail-product-stock').textContent = stockStatusText;
             document.getElementById('detail-product-stock').className = `font-semibold ${stockStatusColor} text-base mb-4`; // Apply color class
 
+            // Display sold count and rating
+            document.getElementById('detail-product-sold-rating').innerHTML = `
+                <span>${product.soldCount !== undefined ? product.soldCount : 0}+ sold</span>
+                <span class="ml-2">${getStarRatingHtml(product.rating !== undefined ? product.rating : 0)} ${product.rating !== undefined ? product.rating.toFixed(1) : '0.0'}</span>
+            `;
+            document.getElementById('detail-product-sold-rating').classList.remove('hidden');
+
+
             // Set up quantity input in detail modal
             const detailQuantityInput = document.getElementById('detail-quantity-input');
             detailQuantityInput.value = 1; // Default to 1
@@ -1172,10 +1229,12 @@
                 detailOrderButton.classList.remove('opacity-50', 'cursor-not-allowed');
                 detailOrderButton.disabled = false;
             }
-            detailOrderButton.onclick = () => showOrderFormFromDetail(product.id, product.name, currentPrice.toFixed(2), product.stock, detailQuantityInput.value);
+            // Pass the current image caption to the order form function
+            const selectedImageCaption = detailImages[currentDetailImageIndex]?.caption || '';
+            detailOrderButton.onclick = () => showOrderFormFromDetail(product.id, product.name, currentPrice.toFixed(2), product.stock, detailQuantityInput.value, selectedImageCaption);
 
-            // Render hotspots for the currently displayed image
-            renderHotspots(product.hotspots || []); // Pass the hotspots array
+            // Hotspots are now only for admin view, so we don't render them here for customer view.
+            // renderHotspots(product.hotspots || []); // Removed this line
 
             showModal('productDetailModal');
         };
@@ -1188,7 +1247,7 @@
             const detailGalleryDotsContainer = document.getElementById('detail-gallery-dots');
             const detailPrevButton = document.getElementById('detail-gallery-prev-button');
             const detailNextButton = document.getElementById('detail-gallery-next-button');
-            const hotspotContainer = document.getElementById('hotspot-container');
+            const hotspotContainer = document.getElementById('hotspot-container'); // Still need this element for structure, but its content will be empty
             const detailImageCaption = document.getElementById('detail-image-caption'); // New element for caption
 
             if (!detailCarouselImage || !detailGalleryDotsContainer || !detailPrevButton || !detailNextButton || !hotspotContainer || !detailImageCaption) {
@@ -1227,11 +1286,8 @@
             detailPrevButton.classList.toggle('hidden', detailImages.length <= 1);
             detailNextButton.classList.toggle('hidden', detailImages.length <= 1);
 
-            // Re-render hotspots when image changes (if needed, though we only have one image per product for now)
-            const currentProduct = allProducts.find(p => p.id === document.getElementById('detail-product-id').value);
-            if (currentProduct) {
-                renderHotspots(currentProduct.hotspots || []);
-            }
+            // Hotspots are removed from customer view, so clear the container
+            hotspotContainer.innerHTML = '';
         }
 
         /**
@@ -1249,7 +1305,21 @@
         };
 
         /**
+         * Opens the image enlargement modal with the current image.
+         */
+        window.enlargeImage = function() {
+            const enlargedImage = document.getElementById('enlarged-image');
+            if (detailImages.length > 0 && detailImages[currentDetailImageIndex]) {
+                enlargedImage.src = detailImages[currentDetailImageIndex].url;
+                showModal('imageEnlargeModal');
+            } else {
+                showModal('messageModal', 'No image available to enlarge.', 'text-red-600');
+            }
+        };
+
+        /**
          * Renders clickable hotspots on the product detail image.
+         * This function is now only used internally for admin view, not customer view.
          * @param {Array<Object>} hotspots - An array of hotspot objects.
          */
         function renderHotspots(hotspots) {
@@ -1258,18 +1328,22 @@
 
             hotspotContainer.innerHTML = ''; // Clear existing hotspots
 
-            hotspots.forEach((hotspot) => { // Removed index from here
-                const marker = document.createElement('div');
-                marker.classList.add('hotspot-marker');
-                marker.style.left = `${hotspot.x}%`;
-                marker.style.top = `${hotspot.y}%`;
-                marker.innerHTML = '<i class="fas fa-plus"></i>'; // Replaced number with plus icon
-                marker.onclick = (e) => {
-                    e.stopPropagation(); // Prevent modal from closing if hotspot is clicked
-                    showHotspotDetail(hotspot.name, hotspot.details);
-                };
-                hotspotContainer.appendChild(marker);
-            });
+            // Only render hotspots if in admin edit mode, or if explicitly requested for debugging
+            // For customer view, this function will effectively do nothing.
+            // if (isAdmin) { // This check can be added if you want to conditionally display for admin
+                hotspots.forEach((hotspot) => {
+                    const marker = document.createElement('div');
+                    // marker.classList.add('hotspot-marker'); // This class is now commented out in CSS for customer view
+                    marker.style.left = `${hotspot.x}%`;
+                    marker.style.top = `${hotspot.y}%`;
+                    marker.innerHTML = '<i class="fas fa-plus"></i>';
+                    marker.onclick = (e) => {
+                        e.stopPropagation();
+                        showHotspotDetail(hotspot.name, hotspot.details);
+                    };
+                    hotspotContainer.appendChild(marker);
+                });
+            // }
         }
 
         /**
@@ -1283,6 +1357,22 @@
             showModal('hotspotDetailModal');
         };
 
+        /**
+         * Uploads an image file to Firebase Storage.
+         * @param {File} file - The image file to upload.
+         * @param {string} productId - The ID of the product this image belongs to.
+         * @returns {Promise<string>} A promise that resolves with the download URL of the uploaded image.
+         */
+        async function uploadImageToFirebaseStorage(file, productId) {
+            if (!storage) {
+                throw new Error("Firebase Storage is not initialized.");
+            }
+            const fileName = `${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, `images/products/${productId}/${fileName}`);
+            const uploadTask = uploadBytes(storageRef, file);
+
+            return uploadTask.then(snapshot => getDownloadURL(snapshot.ref));
+        }
 
         /**
          * Adds a new product to Firestore.
@@ -1297,6 +1387,8 @@
                     return;
                 }
                 showModal('messageModal', 'Adding product...', 'text-blue-600');
+                // Log the entire product object before sending, using JSON.stringify for deep inspection
+                console.log("Product object being sent to Firestore (JSON.stringify):", JSON.stringify(product, null, 2));
                 const productsCollectionRef = collection(db, `artifacts/${appId}/public/data/products`);
                 await addDoc(productsCollectionRef, product);
                 console.log("Product added successfully to Firestore!");
@@ -1305,11 +1397,13 @@
                 for (let i = 0; i < 4; i++) {
                     document.getElementById(`add-product-preview-${i}`).src = 'https://placehold.co/200x200/FF8C00/FFFFFF?text=Image'; // Removed number
                     document.getElementById(`new-product-image-caption-${i}`).value = ''; // Clear caption
+                    document.getElementById(`new-product-image-${i}`).value = ''; // Clear file input
                 }
                 document.getElementById('new-product-hotspots').value = '[]'; // Reset hotspots field
                 showModal('messageModal', 'Product added successfully and is now visible in the shop!', 'text-green-600');
             } catch (e) {
                 console.error("Error adding product to Firestore: ", e);
+                console.error("Problematic product data (stringified):", JSON.stringify(product, null, 2)); // Added for debugging
                 showModal('messageModal', `Error adding product: ${e.message}. Please try again.`, 'text-red-600');
             }
         }
@@ -1328,12 +1422,15 @@
                     return;
                 }
                 showModal('messageModal', 'Saving changes...', 'text-blue-600');
+                // Log the entire updates object before sending, using JSON.stringify for deep inspection
+                console.log("Updates object being sent to Firestore (JSON.stringify):", JSON.stringify(updates, null, 2));
                 const productDocRef = doc(db, `artifacts/${appId}/public/data/products`, productId);
                 await updateDoc(productDocRef, updates);
                 console.log("Product updated successfully in Firestore!");
                 showModal('messageModal', 'Product updated successfully and changes are live in the shop!', 'text-green-600');
             } catch (e) {
                 console.error("Error updating product in Firestore: ", e);
+                console.error("Problematic product data (stringified):", JSON.stringify(updates, null, 2)); // Added for debugging
                 showModal('messageModal', `Error updating product: ${e.message}. Please try again.`, 'text-red-600');
             }
         }
@@ -1376,8 +1473,9 @@
          * @param {string} productPrice - The price of the product.
          * @param {number} productStock - The available stock of the product.
          * @param {number} quantity - The quantity selected by the user.
+         * @param {string} selectedImageCaption - The caption of the image selected by the user.
          */
-        window.showOrderFormFromDetail = function(productId, productName, productPrice, productStock, quantity) {
+        window.showOrderFormFromDetail = function(productId, productName, productPrice, productStock, quantity, selectedImageCaption) {
             const selectedQuantity = parseInt(quantity);
             if (isNaN(selectedQuantity) || selectedQuantity < 1) {
                 showModal('messageModal', 'Please enter a valid quantity (at least 1).', 'text-red-600');
@@ -1397,6 +1495,12 @@
             document.getElementById('order-product-price').value = productPrice;
             document.getElementById('order-quantity').value = selectedQuantity;
             document.getElementById('order-total-price').textContent = `Total: MUR ${(parseFloat(productPrice) * selectedQuantity).toFixed(2)}`;
+
+            // Store the selected image caption in a hidden field for later retrieval
+            document.getElementById('order-selected-image-caption').value = selectedImageCaption;
+            // Clear the optional color input when opening the form
+            document.getElementById('selected-color').value = '';
+
 
             hideModal('productDetailModal'); // Hide product detail modal if it's open
             showModal('orderModal');
@@ -1513,9 +1617,11 @@
                     <div class="bg-white p-5 rounded-lg shadow-sm mb-4 flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-200">
                         <div class="flex-grow">
                             <p class="font-bold text-lg text-gray-800 mb-1">${order.fullName}</p>
+                            ${order.selectedColor && order.selectedColor !== 'N/A' ? `<p class="text-gray-700 text-sm">Colour: <span class="font-medium">${order.selectedColor}</span></p>` : ''}
                             <p class="text-gray-700 text-sm">Contact: <span class="font-medium">${order.contactNumber}</span></p>
                             <p class="text-gray-700 text-sm">Email: <span class="font-medium">${order.emailAddress || 'N/A'}</span></p>
                             <p class="text-gray-700 mt-2">Product: <span class="font-semibold">${order.productName}</span> (Qty: ${order.quantity || 1}) (MUR ${order.productPrice})</p>
+                            ${order.selectedImageCaption ? `<p class="text-gray-700 text-sm">Image: <span class="font-medium">${order.selectedImageCaption}</span></p>` : ''}
                             <p class="text-gray-700 text-sm">Payment Method: <span class="font-medium">${order.paymentMethod === 'juice' ? 'Juice by MCB' : 'Cash in Hand'}</span></p>
                             ${order.deliveryAddress && order.deliveryAddress !== 'N/A' ? `<p class="text-gray-700 text-sm">Delivery Address: <span class="font-medium">${order.deliveryAddress}</span></p>` : ''}
                             <p class="text-xs text-gray-500 mt-2">Order ID: <span class="font-mono">${order.id}</span></p>
@@ -1557,7 +1663,7 @@
 
             products.forEach(product => {
                 let imagesHtml = '';
-                // Ensure product.images is an array of objects for editing
+                // Ensure product.images is an array of objects for editing (already parsed from JSON)
                 const currentImages = product.images || [];
 
                 for (let i = 0; i < 4; i++) {
@@ -1576,7 +1682,7 @@
                     `;
                 }
 
-                // Convert hotspots array to JSON string for display in textarea
+                // Convert hotspots array to JSON string for display in textarea (already parsed from JSON)
                 let productHotspots = product.hotspots || [];
                 const hotspotsJson = JSON.stringify(productHotspots, null, 2);
 
@@ -1617,7 +1723,7 @@
 
 
                         <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-                            <button class="btn-primary flex-1 text-sm" onclick="saveEditedProduct('${product.id}')">Save Changes</button>
+                            <button class="btn-primary flex-1 text-sm" onclick="saveEditedProduct('${product.id}')">Save Changes <span id="edit-product-spinner-${product.id}" class="spinner hidden"></span></button>
                             <button class="btn-primary bg-red-600 hover:bg-red-700 flex-1 text-sm" onclick="deleteProduct('${product.id}')">Remove Product</button>
                         </div>
                     </div>
@@ -1644,6 +1750,8 @@
             const ratingInput = document.getElementById(`edit-rating-${productId}`);
             const categorySelect = document.getElementById(`edit-category-${productId}`);
             const hotspotsInput = document.getElementById(`edit-hotspots-${productId}`);
+            const saveSpinner = document.getElementById(`edit-product-spinner-${productId}`);
+
 
             const name = nameInput.value.trim();
             const description = descriptionInput.value.trim();
@@ -1656,52 +1764,117 @@
             let hotspots = [];
             let images = []; // New array to store image objects
 
-            // Collect all image URLs and captions
-            for (let i = 0; i < 4; i++) {
-                const imgElement = document.getElementById(`edit-preview-${productId}-${i}`);
-                const captionElement = document.getElementById(`edit-image-caption-${productId}-${i}`);
-                if (imgElement && imgElement.src && !imgElement.src.includes('placehold.co')) {
-                    images.push({
-                        url: imgElement.src,
-                        caption: captionElement ? captionElement.value.trim() : ''
-                    });
-                }
-            }
+            // Show spinner
+            saveSpinner.classList.remove('hidden');
 
-            // Parse hotspots JSON
             try {
-                const parsedHotspots = JSON.parse(hotspotsInput.value);
-                if (!Array.isArray(parsedHotspots)) {
-                    throw new Error("Hotspots must be a JSON array.");
-                }
-                // Validate each hotspot object
-                hotspots = parsedHotspots.map(h => {
-                    if (typeof h.x !== 'number' || typeof h.y !== 'number' || typeof h.name !== 'string' || typeof h.details !== 'string' || h.x < 0 || h.x > 100 || h.y < 0 || h.y > 100) {
-                        throw new Error("Each hotspot must have numeric x (0-100), y (0-100), string name, and string details.");
+                // Collect all image URLs and captions, handling new file uploads
+                const uploadPromises = [];
+                for (let i = 0; i < 4; i++) {
+                    const imgElement = document.getElementById(`edit-preview-${productId}-${i}`);
+                    const fileInput = document.getElementById(`edit-image-${productId}-${i}`);
+                    const captionElement = document.getElementById(`edit-image-caption-${productId}-${i}`);
+
+                    const imageCaption = String(captionElement?.value || '').trim();
+
+                    if (fileInput.files.length > 0) {
+                        // New file selected, upload it
+                        uploadPromises.push(uploadImageToFirebaseStorage(fileInput.files[0], productId)
+                            .then(url => ({ url: url, caption: imageCaption }))
+                            .catch(error => {
+                                console.error(`Error uploading image ${i} for product ${productId}:`, error);
+                                showModal('messageModal', `Failed to upload image ${i+1}: ${error.message}`, 'text-red-600');
+                                return null; // Return null to filter out failed uploads
+                            })
+                        );
+                    } else {
+                        // No new file, check if existing image is not a placeholder
+                        const imageUrl = String(imgElement.src || '').trim();
+                        if (imageUrl && !imageUrl.includes('placehold.co')) {
+                            images.push({ url: imageUrl, caption: imageCaption });
+                        }
                     }
-                    return { x: h.x, y: h.y, name: h.name, details: h.details };
+                }
+
+                // Wait for all new image uploads to complete
+                const uploadedImages = await Promise.all(uploadPromises);
+                uploadedImages.forEach(img => {
+                    if (img) images.push(img); // Add successfully uploaded images
                 });
-            } catch (e) {
-                showModal('messageModal', `Invalid Hotspots JSON: ${e.message}`, 'text-red-600');
-                console.error("Invalid Hotspots JSON:", e);
-                return;
-            }
 
-            if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
-                showModal('messageModal', 'Please fill all product fields correctly. Ensure prices are positive, discount is between 0-100, stock and sold count are non-negative, and rating is between 0-5.', 'text-red-600');
-                console.error("Validation failed for edited product.");
-                return;
-            }
 
-            // Calculate current price based on original price and discount
-            const price = originalPrice * (1 - discountPercentage / 100);
+                // Parse hotspots JSON
+                try {
+                    const rawHotspots = hotspotsInput.value.trim();
+                    if (rawHotspots) { // Only parse if not empty
+                        const parsedHotspots = JSON.parse(rawHotspots);
+                        if (!Array.isArray(parsedHotspots)) {
+                            throw new Error("Hotspots must be a JSON array.");
+                        }
+                        hotspots = parsedHotspots.map(h => {
+                            // Explicitly create a new object with only the allowed properties,
+                            // ensuring type conversion for safety.
+                            const hotspotObj = {
+                                x: Number(h.x) || 0, // Default to 0 if not a valid number
+                                y: Number(h.y) || 0, // Default to 0 if not a valid number
+                                name: String(h.name || '').trim(),
+                                details: String(h.details || '').trim()
+                            };
 
-            try {
-                await updateProduct(productId, { name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, images, category, hotspots }); // Include images and hotspots
-                applyProductFilters(); // Explicitly refresh the shop page products after saving edits
+                            // Basic validation for required fields and ranges
+                            if (hotspotObj.name === '' || hotspotObj.details === '') {
+                                throw new Error("Each hotspot must have a non-empty 'name' and 'details'.");
+                            }
+                            if (hotspotObj.x < 0 || hotspotObj.x > 100 || hotspotObj.y < 0 || hotspotObj.y > 100) {
+                                throw new Error("Hotspot 'x' and 'y' coordinates must be between 0 and 100.");
+                            }
+                            return hotspotObj;
+                        }).filter(h => h.name !== '' && h.details !== ''); // Filter out any empty hotspots that might have slipped through
+                    }
+                } catch (e) {
+                    showModal('messageModal', `Invalid Hotspots JSON: ${e.message}`, 'text-red-600');
+                    console.error("Invalid Hotspots JSON:", e);
+                    saveSpinner.classList.add('hidden'); // Hide spinner on error
+                    return; // Stop execution if validation fails
+                }
+
+                if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
+                    showModal('messageModal', 'Please fill all product fields correctly. Ensure prices are positive, discount is between 0-100, stock and sold count are non-negative, and rating is between 0-5.', 'text-red-600');
+                    console.error("Validation failed for edited product.");
+                    saveSpinner.classList.add('hidden'); // Hide spinner on error
+                    return;
+                }
+
+                // Calculate current price based on original price and discount
+                const price = originalPrice * (1 - discountPercentage / 100);
+
+                // Prepare data for Firestore, converting arrays to JSON strings
+                const updatedProductData = {
+                    name,
+                    description,
+                    originalPrice,
+                    discountPercentage,
+                    price,
+                    stock,
+                    soldCount,
+                    rating,
+                    imagesJson: JSON.stringify(images), // Convert images array to JSON string
+                    category,
+                    hotspotsJson: JSON.stringify(hotspots) // Convert hotspots array to JSON string
+                };
+
+                console.log("Updates object being sent to Firestore (JSON.stringify):", JSON.stringify(updatedProductData, null, 2)); // Enhanced logging
+
+
+                await updateProduct(productId, updatedProductData); // Pass the updatedProductData object
+                // Redirect to shop page and filter by the updated category
+                renderPage('shop');
+                applyProductFilters(category);
             } catch (e) {
                 console.error("Error saving edited product: ", e);
                 showModal('messageModal', 'Error saving product changes. Please try again.', 'text-red-600');
+            } finally {
+                saveSpinner.classList.add('hidden'); // Ensure spinner is hidden
             }
         };
 
@@ -1818,18 +1991,22 @@
         /** Processes the order submission, including validation and calling submitOrder. */
         window.processOrder = async function() {
             const fullNameInput = document.getElementById('full-name');
+            const selectedColorInput = document.getElementById('selected-color'); // Get the new color input
             const contactNumberInput = document.getElementById('contact-number');
             const emailAddressInput = document.getElementById('email-address');
             const paymentMethodInput = document.getElementById('payment-method');
             const deliveryAddressInput = document.getElementById('delivery-address');
             const orderQuantityInput = document.getElementById('order-quantity');
+            const selectedImageCaptionInput = document.getElementById('order-selected-image-caption'); // Get the hidden input for caption
 
             const productId = document.getElementById('order-product-id').value;
             const productName = document.getElementById('order-product-name').value;
             const productPrice = document.getElementById('order-product-price').value;
             const quantity = parseInt(orderQuantityInput.value);
+            const selectedImageCaption = selectedImageCaptionInput.value; // Get the caption value
 
             const fullName = fullNameInput.value.trim();
+            const selectedColor = selectedColorInput.value.trim(); // Get the color value
             const contactNumber = contactNumberInput.value.trim();
             const emailAddress = emailAddressInput.value.trim();
             const paymentMethod = paymentMethodInput.value;
@@ -1857,10 +2034,12 @@
                 productPrice,
                 quantity,
                 fullName,
+                selectedColor: selectedColor || 'N/A', // Include the selected color, default to N/A if empty
                 contactNumber,
                 emailAddress: emailAddress || 'N/A',
                 paymentMethod,
-                deliveryAddress: paymentMethod === 'cash' ? deliveryAddress : 'N/A'
+                deliveryAddress: paymentMethod === 'cash' ? deliveryAddress : 'N/A',
+                selectedImageCaption: selectedImageCaption // Include the selected image caption
             };
 
             await submitOrder(orderData);
@@ -1922,11 +2101,13 @@
             }
             showModal('add-new-product-modal');
             document.getElementById('add-product-form').reset();
-            // Reset all image previews and captions for new product form
+            // Reset all image previews and captions
             for (let i = 0; i < 4; i++) {
                 document.getElementById(`add-product-preview-${i}`).src = 'https://placehold.co/200x200/FF8C00/FFFFFF?text=Image'; // Removed number
                 document.getElementById(`new-product-image-caption-${i}`).value = ''; // Clear caption
+                document.getElementById(`new-product-image-${i}`).value = ''; // Clear file input
             }
+            // Ensure default hotspots are valid JSON
             document.getElementById('new-product-hotspots').value = JSON.stringify([
                 {"x": 25, "y": 25, "name": "New Item Part A", "details": "This is the first part of your new product."},
                 {"x": 75, "y": 75, "name": "New Item Part B", "details": "This describes another interesting feature of your new product."}
@@ -1946,6 +2127,7 @@
             const ratingInput = document.getElementById('new-product-rating');
             const categorySelect = document.getElementById('new-product-category');
             const hotspotsInput = document.getElementById('new-product-hotspots');
+            const addSpinner = document.getElementById('add-product-spinner');
 
             const name = nameInput.value.trim();
             const description = descriptionInput.value.trim();
@@ -1958,53 +2140,109 @@
             let hotspots = [];
             let images = []; // New array to store image objects
 
-            // Collect all image URLs and captions
-            for (let i = 0; i < 4; i++) {
-                const imgElement = document.getElementById(`add-product-preview-${i}`);
-                const captionElement = document.getElementById(`new-product-image-caption-${i}`);
-                if (imgElement && imgElement.src && !imgElement.src.includes('placehold.co')) {
-                    images.push({
-                        url: imgElement.src,
-                        caption: captionElement ? captionElement.value.trim() : ''
-                    });
-                }
-            }
+            // Show spinner
+            addSpinner.classList.remove('hidden');
 
-            // Parse hotspots JSON
             try {
-                const parsedHotspots = JSON.parse(hotspotsInput.value);
-                if (!Array.isArray(parsedHotspots)) {
-                    throw new Error("Hotspots must be a JSON array.");
-                }
-                // Validate each hotspot object
-                hotspots = parsedHotspots.map(h => {
-                    if (typeof h.x !== 'number' || typeof h.y !== 'number' || typeof h.name !== 'string' || typeof h.details !== 'string' || h.x < 0 || h.x > 100 || h.y < 0 || h.y > 100) {
-                        throw new Error("Each hotspot must have numeric x (0-100), y (0-100), string name, and string details.");
+                // Collect all image files and their captions, then upload
+                const uploadPromises = [];
+                for (let i = 0; i < 4; i++) {
+                    const fileInput = document.getElementById(`new-product-image-${i}`);
+                    const captionElement = document.getElementById(`new-product-image-caption-${i}`);
+                    const imageCaption = String(captionElement?.value || '').trim();
+
+                    if (fileInput.files.length > 0) {
+                        uploadPromises.push(uploadImageToFirebaseStorage(fileInput.files[0], 'new-product-temp-id') // Use a temp ID for upload path
+                            .then(url => ({ url: url, caption: imageCaption }))
+                            .catch(error => {
+                                console.error(`Error uploading new image ${i}:`, error);
+                                showModal('messageModal', `Failed to upload image ${i+1}: ${error.message}`, 'text-red-600');
+                                return null; // Return null to filter out failed uploads
+                            })
+                        );
                     }
-                    return { x: h.x, y: h.y, name: h.name, details: h.details };
+                }
+
+                // Wait for all image uploads to complete
+                const uploadedImages = await Promise.all(uploadPromises);
+                uploadedImages.forEach(img => {
+                    if (img) images.push(img); // Add successfully uploaded images
                 });
-            } catch (e) {
-                showModal('messageModal', `Invalid Hotspots JSON: ${e.message}`, 'text-red-600');
-                console.error("Invalid Hotspots JSON:", e);
-                return;
-            }
 
-            if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
-                showModal('messageModal', 'Please fill all fields correctly for the new product. Ensure prices are positive, discount is between 0-100, stock and sold count are non-negative, and rating is between 0-5.', 'text-red-600');
-                console.error("Validation failed for new product.");
-                return;
-            }
 
-            // Calculate current price based on original price and discount
-            const price = originalPrice * (1 - discountPercentage / 100);
+                // Parse hotspots JSON
+                try {
+                    const rawHotspots = hotspotsInput.value.trim();
+                    if (rawHotspots) { // Only parse if not empty
+                        const parsedHotspots = JSON.parse(rawHotspots);
+                        if (!Array.isArray(parsedHotspots)) {
+                            throw new Error("Hotspots must be a JSON array.");
+                        }
+                        hotspots = parsedHotspots.map(h => {
+                            // Explicitly create a new object with only the allowed properties,
+                            // ensuring type conversion for safety.
+                            const hotspotObj = {
+                                x: Number(h.x) || 0, // Default to 0 if not a valid number
+                                y: Number(h.y) || 0, // Default to 0 if not a valid number
+                                name: String(h.name || '').trim(),
+                                details: String(h.details || '').trim()
+                            };
 
-            try {
-                await addProduct({ name, description, originalPrice, discountPercentage, price, stock, soldCount, rating, images, category, hotspots }); // Include images and hotspots
+                            // Basic validation for required fields and ranges
+                            if (hotspotObj.name === '' || hotspotObj.details === '') {
+                                throw new Error("Each hotspot must have a non-empty 'name' and 'details'.");
+                            }
+                            if (hotspotObj.x < 0 || hotspotObj.x > 100 || hotspotObj.y < 0 || hotspotObj.y > 100) {
+                                throw new Error("Hotspot 'x' and 'y' coordinates must be between 0 and 100.");
+                            }
+                            return hotspotObj;
+                        }).filter(h => h.name !== '' && h.details !== ''); // Filter out any empty hotspots that might have slipped through
+                    }
+                } catch (e) {
+                    showModal('messageModal', `Invalid Hotspots JSON: ${e.message}`, 'text-red-600');
+                    console.error("Invalid Hotspots JSON:", e);
+                    addSpinner.classList.add('hidden'); // Hide spinner on error
+                    return; // Stop execution if validation fails
+                }
+
+                if (!name || !description || isNaN(originalPrice) || originalPrice <= 0 || isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100 || isNaN(stock) || stock < 0 || isNaN(soldCount) || soldCount < 0 || isNaN(rating) || rating < 0 || rating > 5) {
+                    showModal('messageModal', 'Please fill all fields correctly for the new product. Ensure prices are positive, discount is between 0-100, stock and sold count are non-negative, and rating is between 0-5.', 'text-red-600');
+                    console.error("Validation failed for new product.");
+                    addSpinner.classList.add('hidden'); // Hide spinner on error
+                    return;
+                }
+
+                // Calculate current price based on original price and discount
+                const price = originalPrice * (1 - discountPercentage / 100);
+
+                // Prepare data for Firestore, converting arrays to JSON strings
+                const newProductData = {
+                    name,
+                    description,
+                    originalPrice,
+                    discountPercentage,
+                    price,
+                    stock,
+                    soldCount,
+                    rating,
+                    imagesJson: JSON.stringify(images), // Convert images array to JSON string
+                    category,
+                    hotspotsJson: JSON.stringify(hotspots) // Convert hotspots array to JSON string
+                };
+
+                console.log("Product object being sent to Firestore (JSON.stringify):", JSON.stringify(newProductData, null, 2)); // Enhanced logging
+
+
+                await addProduct(newProductData); // Pass the newProductData object
                 hideModal('add-new-product-modal');
-                applyProductFilters();
+                // Redirect to shop page and filter by the newly added category
+                renderPage('shop');
+                applyProductFilters(category);
             } catch (e) {
                 console.error("Error adding product: ", e);
                 showModal('messageModal', 'Error adding product. Please try again.', 'text-red-600');
+            } finally {
+                addSpinner.classList.add('hidden'); // Ensure spinner is hidden
             }
         };
 
@@ -2240,18 +2478,8 @@
                 categoryMenu.appendChild(listItem);
             });
 
-            // Add Admin Login button at the very bottom of the menu
-            let adminLoginListItem = document.createElement('li');
-            adminLoginListItem.classList.add('mt-auto', 'pt-4');
-            let adminLoginButton = document.createElement('button');
-            adminLoginButton.classList.add('btn-secondary', 'w-full', 'py-2.5', 'text-base');
-            adminLoginButton.textContent = 'Admin Login';
-            adminLoginButton.onclick = () => {
-                openAdminLoginModal();
-                hideHamburgerMenu();
-            };
-            adminLoginListItem.appendChild(adminLoginButton);
-            categoryMenu.appendChild(adminLoginListItem);
+            // The Admin Login button is now a sticky element outside this UL,
+            // so no need to add it here.
         }
     </script>
 
@@ -2260,8 +2488,12 @@
         <button class="menu-close-button" onclick="toggleHamburgerMenu()">&times;</button>
         <h3 class="text-2xl font-bold text-white mb-6">Categories</h3>
         <ul id="category-menu-list">
-            <!-- Categories and Admin Login button will be rendered here by JavaScript -->
+            <!-- Categories will be rendered here by JavaScript -->
         </ul>
+        <!-- This div will contain the sticky admin login button -->
+        <div class="admin-sticky-button-container">
+            <button class="btn-secondary w-full py-2.5 text-base" onclick="openAdminLoginModal()">Admin Login</button>
+        </div>
     </div>
 
     <!-- Header Section -->
@@ -2314,8 +2546,8 @@
                 <div class="mb-10 flex justify-center">
                     <input type="text" id="search-input" onkeyup="applyProductFilters()" placeholder="Search products by name or description..." class="w-full max-w-md p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
-                <!-- Adjusted grid columns for product display -->
-                <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                <!-- Changed to flex for horizontal scrolling -->
+                <div id="products-grid" class="flex overflow-x-auto whitespace-nowrap pb-4 snap-x snap-mandatory">
                     <!-- Products will be loaded here by JavaScript -->
                 </div>
             </div>
@@ -2377,11 +2609,11 @@
                 <div class="md:w-1/2 relative flex flex-col items-center justify-center">
                     <!-- Image Carousel Area -->
                     <div class="detail-image-carousel-container">
-                        <img id="detail-carousel-image" src="" alt="Product Image">
+                        <img id="detail-carousel-image" src="" alt="Product Image" class="cursor-pointer" onclick="enlargeImage()">
                         <button class="detail-gallery-nav-button left" id="detail-gallery-prev-button" onclick="navigateDetailImage(-1)">&#10094;</button>
                         <button class="detail-gallery-nav-button right" id="detail-gallery-next-button" onclick="navigateDetailImage(1)">&#10095;</button>
                         <div id="detail-gallery-dots" class="detail-gallery-dots"></div>
-                        <!-- Hotspots Container -->
+                        <!-- Hotspots Container (will be empty for customer view) -->
                         <div id="hotspot-container" class="hotspot-container"></div>
                     </div>
                     <p id="detail-image-caption" class="text-sm text-gray-600 mt-2 text-center font-medium"></p> <!-- New: Image Caption Display -->
@@ -2394,6 +2626,8 @@
                         <p id="detail-product-price" class="mb-2"></p>
                         <p id="detail-product-savings" class="savings-text hidden mb-4"></p>
                         <p id="detail-product-stock" class="font-semibold text-base mb-4"></p>
+                        <!-- Sold count and rating now in detail modal -->
+                        <div id="detail-product-sold-rating" class="sold-rating mb-4 hidden"></div>
                         <input type="hidden" id="detail-product-id">
                         <!-- Quantity input in product detail modal -->
                         <div class="flex items-center justify-center mt-3 mb-4">
@@ -2418,6 +2652,14 @@
         </div>
     </div>
 
+    <!-- Image Enlarge Modal (New Modal) -->
+    <div id="imageEnlargeModal" class="modal-overlay hidden">
+        <div class="modal-content-base">
+            <button class="close-button" onclick="hideModal('imageEnlargeModal')">&times;</button>
+            <img id="enlarged-image" src="" alt="Enlarged Product Image">
+        </div>
+    </div>
+
     <!-- Order Modal -->
     <div id="orderModal" class="modal-overlay hidden">
         <div class="modal-content-base w-full md:w-2/3 lg:w-1/2 xl:w-1/3">
@@ -2431,12 +2673,18 @@
                 <input type="hidden" id="order-product-name">
                 <input type="hidden" id="order-product-price">
                 <input type="hidden" id="order-quantity">
+                <input type="hidden" id="order-selected-image-caption"> <!-- Hidden field to store the selected image caption -->
 
                 <p id="order-total-price" class="text-xl font-bold text-center text-orange-700 mb-4">Total: MUR 0.00</p>
 
                 <div>
                     <label for="full-name" class="block text-gray-700 text-sm font-bold mb-1">Full Name <span class="text-red-500">*</span>:</label>
                     <input type="text" id="full-name" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" required placeholder="John Doe">
+                </div>
+                <!-- New: Colour (optional) field -->
+                <div>
+                    <label for="selected-color" class="block text-gray-700 text-sm font-bold mb-1">Colour (Optional):</label>
+                    <input type="text" id="selected-color" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g., Red, Blue, Black">
                 </div>
                 <div>
                     <label for="contact-number" class="block text-gray-700 text-sm font-bold mb-1">Contact Number <span class="text-red-500">*</span>:</label>
@@ -2560,7 +2808,7 @@
                 </div>
                 <div>
                     <label for="new-product-stock" class="block text-gray-700 text-sm font-bold mb-1">Stock Quantity <span class="text-red-500">*</span>:</label>
-                    <input type="number" id="new-product-stock" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" step="1" required placeholder="e.g., 100">
+                    <input type="number" id="new-product-stock" class="w-full p-2 border border-gray-300 rounded-sm focus:outline-none focus:ring-2 focus:ring-orange-500" min="0" step="1" value="1">
                 </div>
                 <div>
                     <label for="new-product-sold-count" class="block text-gray-700 text-sm font-bold mb-1">Sold Count:</label>
@@ -2606,6 +2854,18 @@
                 <ul id="category-management-list" class="space-y-2">
                     <!-- Categories will be listed here by JavaScript -->
                 </ul>
+            </div>
+        </div>
+    </div>
+    <!-- Footer Section -->
+    <footer class="bg-gray-800 text-white py-8 px-4 md:px-8 mt-12">
+        <div class="max-w-7xl mx-auto text-center">
+            <p class="text-lg font-bold mb-2">Flourish Boutique</p>
+            <p class="text-sm">&copy; 2025 All rights reserved.</p>
+            <div class="flex justify-center space-x-4 mt-4">
+                <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">Privacy Policy</a>
+                <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">Terms of Service</a>
+                <a href="#" class="text-gray-400 hover:text-white transition-colors duration-200">Contact Us</a>
             </div>
         </div>
     </footer>
